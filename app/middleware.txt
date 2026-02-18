@@ -1,0 +1,70 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import axios from "axios";
+
+// 🔐 Define which routes need which role
+const roleRoutes: Record<string, "ADMIN" | "USER"> = {
+  "/admin-dashboard": "ADMIN",
+  "/manage-users": "ADMIN",
+  "/reports": "ADMIN",
+
+  "/user-dashboard": "USER",
+  "/profile": "USER",
+};
+
+export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+
+  try {
+    const cookie = request.headers.get("cookie");
+
+    const response = await axios.get("http://localhost:8080/auth/me", {
+      headers: {
+        Cookie: cookie || "",
+      },
+      validateStatus: () => true,
+    });
+
+    // ❌ Not logged in
+    if (response.status !== 200) {
+      // allow access to login page itself
+      if (path === "/login") return NextResponse.next();
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const user = response.data;
+
+    if (path === "/") {
+      if (user.role === "ADMIN") {
+        return NextResponse.redirect(new URL("/admin-dashboard", request.url));
+      }
+      if (user.role === "USER") {
+        return NextResponse.redirect(new URL("/user-dashboard", request.url));
+      }
+    }
+
+    // 🔐 Role-protected routes
+    const requiredRole = roleRoutes[path];
+    if (requiredRole && user.role !== requiredRole) {
+      return NextResponse.redirect(new URL("/unauthorized", request.url));
+    }
+
+    // ✅ Allowed
+    return NextResponse.next();
+
+  } catch {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+}
+
+export const config = {
+  matcher: [
+    "/",
+    "/admin-dashboard",
+    "/manage-users",
+    "/reports",
+    "/user-dashboard",
+    "/profile",
+    "/login",
+  ],
+};
