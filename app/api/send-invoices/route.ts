@@ -18,16 +18,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// const transporter = nodemailer.createTransport({
-//   service: "gmail",
-//   secure: false,
-//   port: 587,
-//   auth: {
-//     user: process.env.SYSTEM_EMAIL,
-//     pass: process.env.SYSTEM_EMAIL_APP_PASSWORD,
-//   },
-// });
-
 /* =========================
    PDF GENERATION
 ========================= */
@@ -120,21 +110,39 @@ async function sendInvoiceEmail(invoice: any) {
 /* =========================
    API ROUTE
 ========================= */
+
 export async function POST(req: Request) {
   try {
     const { invoiceIds } = await req.json();
+    
 
-    //console.log("Fetching invoices for:", invoiceIds);
+    console.log("Fetching invoices for:", invoiceIds);
+
+    // 🔥 Forward browser cookies to Spring
+    const cookieHeader = req.headers.get("cookie");
 
     const springRes = await axios.post(
       "http://localhost:8080/internal/invoices/for-mail",
-      invoiceIds
+      invoiceIds,
+      {
+        headers: {
+          Cookie: cookieHeader ?? "",
+        },
+        withCredentials: true,
+      }
     );
 
     const invoices = springRes.data;
 
-    //console.log("SPRING RAW RESPONSE:", springRes.data);
-    //console.log("TYPE:", typeof springRes.data);
+    console.log("SPRING STATUS:", springRes.status);
+    console.log("IS ARRAY:", Array.isArray(invoices));
+
+    if (!Array.isArray(invoices)) {
+      return NextResponse.json(
+        { error: "Invalid invoice data from backend" },
+        { status: 500 }
+      );
+    }
 
     // Run all emails in parallel
     const emailPromises = invoices.map(async (invoice: any) => {
