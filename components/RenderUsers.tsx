@@ -114,85 +114,186 @@ const sendusers = async () => {
 };
 
 
+// return (
+//   <div className="p-10">
+//     <h1 className="text-2xl font-semibold mb-6">Manage Residents</h1>
+
+//     <button
+//       onClick={selectAll}
+//       className="mb-4 px-4 py-2 bg-gray-200 text-black rounded"
+//     >
+//       {selectedIds.length === users.length
+//         ? "Unselect All"
+//         : "Select All"}
+//     </button>
+
+//     <div className="overflow-x-auto">
+//       <table className="min-w-full border border-gray-300">
+//         <thead className="bg-gray-100 text-black">
+//           <tr>
+//             <th className="p-3"></th>
+//             <th className="p-3 text-left">Wing</th>
+//             <th className="p-3 text-left">Flat Number</th>
+//             <th className="p-3 text-left">Name</th>
+//             <th className="p-3 text-left">Phone</th>
+//             <th className="p-3 text-left">Email</th>
+//             <th className="p-3 text-left">Total Pending</th>
+//             <th className="p-3 text-left">Status</th>
+//           </tr>
+//         </thead>
+
+//         <tbody>
+//           {users.length === 0 ? (
+//             <tr>
+//               <td colSpan={8} className="text-center p-6 text-gray-500">
+//                 No users found
+//               </td>
+//             </tr>
+//           ) : (
+//             users.map((user) => (
+//               <tr key={user.userId} className="border-t hover:bg-gray-50">
+//                 <td className="p-3">
+//                   <input
+//                     type="checkbox"
+//                     checked={selectedIds.includes(user.userId)}
+//                     onChange={() => toggleSelect(user.userId)}
+//                   />
+//                 </td>
+
+//                 <td className="p-3">{user.wing}</td>
+//                 <td className="p-3">{user.flatNumber}</td>
+//                 <td className="p-3">{user.name}</td>
+//                 <td className="p-3">{user.phone}</td>
+//                 <td className="p-3">{user.email}</td>
+//                 <td className="p-3 font-semibold">
+//                   ₹ {user.totalPendingAmount}
+//                 </td>
+//                 <td
+//                   className={`p-3 font-medium ${
+//                     user.status === "OVERDUE"
+//                       ? "text-red-600"
+//                       : user.status === "PENDING"
+//                       ? "text-yellow-600"
+//                       : "text-green-600"
+//                   }`}
+//                 >
+//                   {user.status}
+//                 </td>
+//               </tr>
+//             ))
+//           )}
+//         </tbody>
+//       </table>
+//     </div>
+
+//     <button
+//       onClick={sendusers}
+//       disabled={loading || selectedIds.length === 0}
+//       className="mt-6 px-6 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+//     >
+//       {loading ? "Sending..." : "Send Selected Users"}
+//     </button>
+//   </div>
+// );
+
+
 return (
-  <div className="p-10">
-    <h1 className="text-2xl font-semibold mb-6">Manage Residents</h1>
+  // <div className="p-10 bg-gray-50 min-h-screen">
+    <div className="max-w-6xl mx-auto bg-white shadow-md rounded-xl p-8">
 
-    <button
-      onClick={selectAll}
-      className="mb-4 px-4 py-2 bg-gray-200 text-black rounded"
-    >
-      {selectedIds.length === users.length
-        ? "Unselect All"
-        : "Select All"}
-    </button>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">
+          Manage Residents
+        </h1>
 
-    <div className="overflow-x-auto">
-      <table className="min-w-full border border-gray-300">
-        <thead className="bg-gray-100 text-black">
-          <tr>
-            <th className="p-3"></th>
-            <th className="p-3 text-left">Wing</th>
-            <th className="p-3 text-left">Flat Number</th>
-            <th className="p-3 text-left">Name</th>
-            <th className="p-3 text-left">Phone</th>
-            <th className="p-3 text-left">Email</th>
-            <th className="p-3 text-left">Total Pending</th>
-            <th className="p-3 text-left">Status</th>
-          </tr>
-        </thead>
+        <button
+          onClick={selectAll}
+          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition"
+        >
+          {selectedIds.length === users.length ? "Unselect All" : "Select All"}
+        </button>
+      </div>
 
-        <tbody>
-          {users.length === 0 ? (
+      {/* Table */}
+      <div className="overflow-x-auto border rounded-lg">
+        <table className="min-w-full text-sm text-gray-700">
+          <thead className="bg-gray-100 text-gray-700 uppercase text-xs tracking-wider">
             <tr>
-              <td colSpan={8} className="text-center p-6 text-gray-500">
-                No users found
-              </td>
+              <th className="p-3"></th>
+              <th className="p-3 text-left">Wing</th>
+              <th className="p-3 text-left">Flat</th>
+              <th className="p-3 text-left">Name</th>
+              <th className="p-3 text-left">Phone</th>
+              <th className="p-3 text-left">Email</th>
+              <th className="p-3 text-left">Pending</th>
+              <th className="p-3 text-left">Status</th>
             </tr>
-          ) : (
-            users.map((user) => (
-              <tr key={user.userId} className="border-t hover:bg-gray-50">
-                <td className="p-3">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(user.userId)}
-                    onChange={() => toggleSelect(user.userId)}
-                  />
-                </td>
+          </thead>
 
-                <td className="p-3">{user.wing}</td>
-                <td className="p-3">{user.flatNumber}</td>
-                <td className="p-3">{user.name}</td>
-                <td className="p-3">{user.phone}</td>
-                <td className="p-3">{user.email}</td>
-                <td className="p-3 font-semibold">
-                  ₹ {user.totalPendingAmount}
-                </td>
-                <td
-                  className={`p-3 font-medium ${
-                    user.status === "OVERDUE"
-                      ? "text-red-600"
-                      : user.status === "PENDING"
-                      ? "text-yellow-600"
-                      : "text-green-600"
-                  }`}
-                >
-                  {user.status}
+          <tbody>
+            {users.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="text-center p-10 text-gray-400">
+                  No residents found
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+            ) : (
+              users.map((user) => (
+                <tr
+                  key={user.userId}
+                  className="border-t hover:bg-gray-50 transition"
+                >
+                  <td className="p-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(user.userId)}
+                      onChange={() => toggleSelect(user.userId)}
+                      className="w-4 h-4"
+                    />
+                  </td>
 
-    <button
-      onClick={sendusers}
-      disabled={loading || selectedIds.length === 0}
-      className="mt-6 px-6 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-    >
-      {loading ? "Sending..." : "Send Selected Users"}
-    </button>
-  </div>
+                  <td className="p-3 font-medium">{user.wing}</td>
+                  <td className="p-3">{user.flatNumber}</td>
+                  <td className="p-3">{user.name}</td>
+                  <td className="p-3">{user.phone}</td>
+                  <td className="p-3">{user.email}</td>
+
+                  <td className="p-3 font-semibold text-gray-800">
+                    ₹ {user.totalPendingAmount}
+                  </td>
+
+                  <td className="p-3">
+                    <span
+                      className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                        user.status === "OVERDUE"
+                          ? "bg-red-100 text-red-600"
+                          : user.status === "PENDING"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-green-100 text-green-600"
+                      }`}
+                    >
+                      {user.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer Button */}
+      <div className="mt-8 flex justify-end">
+        <button
+          onClick={sendusers}
+          disabled={loading || selectedIds.length === 0}
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow disabled:opacity-40 transition"
+        >
+          {loading ? "Sending..." : "Send Selected Users"}
+        </button>
+      </div>
+    </div>
+  // </div>
 );
 }
