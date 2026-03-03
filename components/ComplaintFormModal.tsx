@@ -38,7 +38,7 @@ export default function ComplaintModal() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="px-4 py-2 border rounded-md hover:bg-gray-100"
+        className="bg-blue-500 text-white px-4 py-2 border rounded-md hover:bg-gray-100"
       >
         Raise Complaint
       </button>
