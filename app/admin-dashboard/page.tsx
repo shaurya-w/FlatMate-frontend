@@ -24,8 +24,10 @@ export default function AdminDashboard() {
     </div>
   );
 
+}
 
-}// "use client";
+
+// "use client";
 
 // import { useEffect, useState } from "react";
 // import { useRouter } from "next/navigation";
