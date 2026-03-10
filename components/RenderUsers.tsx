@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import { useState, useEffect} from "react";
 
 interface AdminTableRow {
@@ -28,16 +29,16 @@ useEffect(() => {
     try {
       setLoadingUsers(true);
 
-      const response = await fetch(
-        "http://localhost:8080/api/admin/dashboard",
-        { credentials: "include" }
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin/dashboard`,
+        { withCredentials: true }
       );
 
-      if (!response.ok) {
+      if (!response.data) {
         throw new Error(`Status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = await response.data;
 
       if (isMounted) {
         setUsers(data);
@@ -91,13 +92,13 @@ const sendusers = async () => {
   try {
     setLoading(true);
 
-    const response = await fetch("/api/send-invoices", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ invoiceIds: selectedIds })  //send raw array of IDs to backend
+    const response = await axios.post(`${process.env.BASE_URL}/api/send-invoices`, {
+      invoiceIds: selectedIds
+    }, {
+      headers: { "Content-Type": "application/json" }
     });
 
-    const data = await response.json();
+    const data = await response.data;
 
     if (data.success) {
       alert("Users sent successfully!");

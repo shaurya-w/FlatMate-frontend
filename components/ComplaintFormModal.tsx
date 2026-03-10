@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Modal from "./ui/Modal";
+import axios from "axios";
 
 export default function ComplaintModal() {
 
@@ -14,13 +15,12 @@ export default function ComplaintModal() {
     try {
       setLoading(true);
 
-      const response = await fetch("/api/complaints", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description }),
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/complaints`, {
+        title,
+        description
       });
 
-      if (!response.ok) throw new Error();
+      if (!response.data) throw new Error();
 
       setIsOpen(false);
       setTitle("");

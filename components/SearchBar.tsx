@@ -33,7 +33,7 @@ export default function SearchBar() {
       setLoading(true);
 
       const res = await axios.get(
-        `http://localhost:8080/api/admin/residents/search?q=${query}`,
+        `${process.env.BASE_URL}/api/admin/residents/search?q=${query}`,
         { withCredentials: true }
       );
 

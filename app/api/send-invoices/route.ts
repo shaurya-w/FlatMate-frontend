@@ -114,15 +114,16 @@ async function sendInvoiceEmail(invoice: any) {
 export async function POST(req: Request) {
   try {
     const { invoiceIds } = await req.json();
+     const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
     
 
     console.log("Fetching invoices for:", invoiceIds);
 
-    // 🔥 Forward browser cookies to Spring
+    // Forward browser cookies to Spring
     const cookieHeader = req.headers.get("cookie");
 
     const springRes = await axios.post(
-      "http://localhost:8080/internal/invoices/for-mail",
+      `${process.env.BASE_URL}/internal/invoices/for-mail`,
       invoiceIds,
       {
         headers: {

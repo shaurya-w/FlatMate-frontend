@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/lib/axios";
+import axios from "axios";
+import { p } from "framer-motion/client";
 
 export default function Login() {
   const router = useRouter();
@@ -12,25 +14,32 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    try {
-      await api.post("/auth/login", { email, password });
+  try {
 
 
-      const { data } = await api.get("/auth/me");
+    await axios.post(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`,
+      { email, password },
+      { withCredentials: true }
+    );
 
-      if (data.role === "ADMIN") {
-        router.push("/admin-dashboard");
-      } else if (data.role === "USER") {
-        router.push("/user-dashboard");
-      } else {
-        router.push("/unauthorized");
-      }
+    const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
+      withCredentials: true,
+    });
 
-    } catch (err: any) {
-      console.error("Login error:", err);
-      setError(err.response?.data || "Login failed");
+    if (data.role === "ADMIN") {
+      router.push("/admin-dashboard");
+    } else if (data.role === "USER") {
+      router.push("/user-dashboard");
+    } else {
+      router.push("/unauthorized");
     }
-  };
+
+  } catch (err: any) {
+    console.error("Login error:", err);
+    setError(err.response?.data || "Login failed");
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
