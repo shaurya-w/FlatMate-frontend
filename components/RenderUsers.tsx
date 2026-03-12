@@ -92,13 +92,14 @@ const sendusers = async () => {
   try {
     setLoading(true);
 
-    const response = await axios.post(`${process.env.BASE_URL}/api/send-invoices`, {
+    console.log("Sending invoice IDs to NEXT backend:", selectedIds);
+    const response = axios.post(`/api/send-invoices`, {
       invoiceIds: selectedIds
     }, {
       headers: { "Content-Type": "application/json" }
     });
 
-    const data = await response.data;
+    const { data } = await response;
 
     if (data.success) {
       alert("Users sent successfully!");
