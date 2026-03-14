@@ -2,7 +2,6 @@
 
 import RenderUsers from "../../components/RenderUsers";
 import AdminMetrics from "../../components/AdminMetrics";
-// import Navbar from "../../components/layout/navbar";
 import DashboardLayout from "../../components/layout/dashboardlayout";
 import NoticeModal from "../../components/ui/NoticeModal";
 import SearchBar from "../../components/SearchBar";
@@ -10,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import router from "next/router";
 import { api } from "@/lib/axios";
+import { useAuth } from "@/hooks/useAuth";
 
 interface User {
   name: string;
@@ -18,38 +18,15 @@ interface User {
 
 export default function AdminDashboard() {
 
-  const[user, setUser] = useState<User | null>(null);
-  const[loading, setLoading] = useState(true);
-  const router = useRouter();
+  const { user, loading } = useAuth("ADMIN");
 
-  // useEffect(() => {
-  //     api.get(`${process.env.BASE_URL}/auth/me`, {
-  //       withCredentials: true,
-  //     })
-  //       .then((res: { data: any; }) => {
-  //         const data = res.data;
-  //         if (!data) throw new Error();
-  //         return data;
-  //       })
-  //       .then((data: { role: string; }) => {
-  //         if (data.role !== "USER") {
-  //           router.push("/unauthorized");
-  //         } else {
-  //           setUser(data);
-  //           setLoading(false);
-  //         }
-  //       })
-  //       .catch(() => router.push("/login"));
-  //   }, [router]);
-  
-  //   if (loading) return <h2>Checking access...</h2>;
-  
-  //   if (!user) return <h2>User not found</h2>;
-  
+  if (loading) return <p>Loading...</p>;
+  if (!user) return <p>User not found</p>;
+
 
   return (
 
-      <DashboardLayout name={"Shaurya"}>
+      <DashboardLayout name={user.name}>
 
       {/* Users Section */}
       <AdminMetrics/>

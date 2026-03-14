@@ -1,50 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { api } from "@/lib/axios";
+import { useAuth, User } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/layout/dashboardlayout";
 import ComplaintModal from "@/components/ComplaintFormModal";
 import NoticeSlider from "@/components/NoticeSlider";
-
-interface User {
-  name: string;
-  role: string;
-}
+import FetchInvoices from "@/components/FetchInvoices";
 
 export default function UserDashboard() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
-   const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const { user, loading } = useAuth("USER");
 
-  useEffect(() => {
-    // withCredentials is set globally on the api instance,
-    // so the session cookie is forwarded automatically.
-    api
-      .get(`${process.env.BASE_URL}/auth/me`)
-      .then((res) => {
-        const data = res.data;
-        if (!data) throw new Error("No user data returned");
-        return data;
-      })
-      .then((data) => {
-        if (data.role !== "USER") {
-          router.push("/unauthorized");
-        } else {
-          setUser(data);
-          setLoading(false);
-        }
-      })
-      .catch(() => router.push("/login"));
-  }, [router]);
-
-  if (loading) return <h2>Checking access...</h2>;
-  if (!user) return <h2>User not found</h2>;
+  if (loading) return <p>Loading...</p>;
+  if (!user) return <p>User not found</p>;
 
   return (
     <DashboardLayout name={user.name}>
-
       {/* Welcome Section */}
       <div className="mb-8">
         <p className="text-orange-500 text-sm">Welcome back,</p>
@@ -79,6 +48,7 @@ export default function UserDashboard() {
         </div>
       </div>
 
+      {/* Community Notices */}
       <h2 className="text-black text-xl font-semibold">Community Notices</h2>
       <div className="flex items-center justify-between mb-7">
         <NoticeSlider societyId={1} />
@@ -89,6 +59,11 @@ export default function UserDashboard() {
         <ComplaintModal />
       </div>
 
+      {/* Invoices Section */}
+      <div className="mb-8">
+        <h2 className="text-black text-xl font-semibold">Your Invoices</h2>
+        <FetchInvoices userId={1} />
+      </div>
     </DashboardLayout>
   );
 }
