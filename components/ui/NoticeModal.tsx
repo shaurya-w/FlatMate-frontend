@@ -40,7 +40,7 @@ const submitNotice = async () => {
     console.log("Payload:", payload);
 
     const response = await axios.post(
-      "http://localhost:8080/api/admin/notices",
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin/notices`,
       payload,
       { withCredentials: true }
     );
