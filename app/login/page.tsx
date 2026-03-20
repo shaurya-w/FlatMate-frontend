@@ -23,6 +23,11 @@ export default function Login() {
       { withCredentials: true }
     );
 
+    if(!process.env.NEXT_PUBLIC_API_BASE_URL) {
+      alert("There is some issue on our end. Please try again later.");
+      return;
+    }
+
     const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
       withCredentials: true,
     });

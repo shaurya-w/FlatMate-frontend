@@ -16,86 +16,150 @@ export default function FetchInvoices({ userId }: { userId: number }) {
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [payingId, setPayingId] = useState<number | null>(null);
+  const [refresh, setRefresh] = useState(0);
 
+  // =========================
+  // 1. FETCH INVOICES
+  // =========================
   useEffect(() => {
-    const fetchInvoices = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/user/${userId}/pending`, 
-          {
-            credentials: "include"
-          }
-        );
-        const data = await res.json();
-        setInvoices(data);
-      } catch (err) {
-        console.error("Error fetching invoices", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchInvoices = async () => {
+    console.log("Fetching invoices for user:", userId);
 
-    fetchInvoices();
-  }, [userId]);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/user/${userId}/pending`,
+        { credentials: "include" }
+      );
 
+      console.log("Invoice API status:", res.status);
+
+      const data = await res.json();
+
+      console.log("Invoices received:", data);
+
+      setInvoices(data);
+    } catch (err) {
+      console.error("Error fetching invoices", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchInvoices();
+}, [userId, refresh]);
+
+  // =========================
+  // 2. HANDLE PAYMENT
+  // =========================
   const handlePayNow = async (invoiceId: number) => {
-  try {
-    setPayingId(invoiceId);
+   // console.log("Pay Now clicked for invoice:", invoiceId);
 
-    // Create order
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/create-order/${invoiceId}`,
-      { method: "POST", credentials: "include" }
+    try {
+      setPayingId(invoiceId);
+
+      // =========================
+      // STEP 1: CREATE ORDER
+      // =========================
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/create-order/${invoiceId}`,
+        { method: "POST", credentials: "include" }
+      );
+
+     // console.log(" Order API status:", res.status);
+
+      const order = await res.json();
+
+      if (!order?.orderId) {
+        console.error("Missing orderId! Backend issue.");
+        return;
+      }
+
+      // =========================
+      // STEP 2: OPEN RAZORPAY
+      // =========================
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY,
+        amount: order.amount,
+        currency: order.currency,
+        name: "SocietyPay",
+        description: "Maintenance Payment",
+        order_id: order.orderId,
+
+        // =========================
+        // STEP 3: PAYMENT SUCCESS HANDLER
+        // =========================
+       handler: async function (response: any) {
+
+  try {
+    console.log("Verifying payment on backend...");
+
+    const verifyRes = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/verify`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          invoiceId,
+          razorpayOrderId: response.razorpay_order_id,
+          razorpayPaymentId: response.razorpay_payment_id,
+          razorpaySignature: response.razorpay_signature,
+        }),
+      }
     );
 
-    const order = await res.json();
+   // console.log("Verify API status:", verifyRes.status);
 
-    // Open Razorpay
-    const options = {
-      key:  `${process.env.NEXT_PUBLIC_RAZORPAY_KEY}`, 
-      amount: order.amount,
-      currency: order.currency,
-      name: "SocietyPay",
-      description: "Maintenance Payment",
-      order_id: order.id,
+    const verifyData = await verifyRes.json();
 
-      handler: async function (response: any) {
-        console.log("Payment success:", response);
+    if (verifyData.success) {
+     // console.log("Payment verified and DB updated");
 
-        // Verify payment
-        await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/verify`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            razorpayOrderId: response.razorpay_order_id,
-            razorpayPaymentId: response.razorpay_payment_id,
-            razorpaySignature: response.razorpay_signature,
-          }),
-        });
+      // trigger refetch
+      setRefresh((prev) => prev + 1);
 
-        alert("Payment successful 🎉");
-
-        // optional: refresh invoices
-      },
-
-      theme: {
-        color: "#f97316",
-      },
-    };
-
-    const rzp = new (window as any).Razorpay(options);
-    rzp.open();
-
+      alert("Payment successful");
+    } else {
+      console.error("Verification failed");
+      alert("Payment verification failed. Please contact support.");
+    }
   } catch (err) {
-    console.error(err);
-    alert("Payment failed");
-  } finally {
-    setPayingId(null);
+    console.error("Error verifying payment:", err);
   }
-};
+},
 
+        // =========================
+        // USER CLOSED PAYMENT
+        // =========================
+        modal: {
+          ondismiss: function () {
+            console.log("User closed Razorpay popup");
+          },
+        },
+
+        theme: {
+          color: "#f97316",
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+
+    } catch (err) {
+      console.error("❌ Payment failed:", err);
+      alert("Payment failed");
+    } finally {
+      setPayingId(null);
+    }
+  };
+
+  // =========================
+  // UI
+  // =========================
   if (loading) return <p className="text-gray-500 mt-4">Loading invoices...</p>;
 
   if (invoices.length === 0)
@@ -112,7 +176,6 @@ export default function FetchInvoices({ userId }: { userId: number }) {
           key={inv.invoiceId}
           className="bg-white border rounded-xl p-4 shadow-sm flex justify-between items-center"
         >
-          {/* LEFT */}
           <div>
             <p className="text-gray-800 font-semibold">
               ₹{inv.pendingAmount}
@@ -122,18 +185,11 @@ export default function FetchInvoices({ userId }: { userId: number }) {
               Due: {inv.dueDate}
             </p>
 
-            <span
-              className={`text-xs px-2 py-1 rounded-full mt-1 inline-block ${
-                inv.status === "OVERDUE"
-                  ? "bg-red-100 text-red-600"
-                  : "bg-yellow-100 text-yellow-700"
-              }`}
-            >
+            <span className="text-xs px-2 py-1 rounded-full mt-1 inline-block">
               {inv.status}
             </span>
           </div>
 
-          {/* RIGHT */}
           <button
             onClick={() => handlePayNow(inv.invoiceId)}
             disabled={payingId === inv.invoiceId}
