@@ -8,7 +8,6 @@ export interface Notice {
   title: string
   content: string
   authorName: string
-  tags: string[]
   createdAt: string
   expirationDate: string
 }
@@ -37,14 +36,28 @@ export default function NoticeSlider({ societyId }: { societyId: number }) {
 
   if (loading) {
     return (
-      <div className="h-[35vh] flex items-center justify-center">
-        Loading notices...
+      <div
+        className="h-36 flex items-center justify-center rounded-xl border"
+        style={{ background: "var(--muted)", borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+      >
+        <span className="text-sm">Loading notices…</span>
+      </div>
+    )
+  }
+
+  if (notices.length === 0) {
+    return (
+      <div
+        className="h-36 flex items-center justify-center rounded-xl border"
+        style={{ background: "var(--muted)", borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+      >
+        <span className="text-sm">No notices right now</span>
       </div>
     )
   }
 
   return (
-    <div className="h-[35vh] w-full overflow-x-auto flex gap-4 py-4 px-2">
+    <div className="w-full overflow-x-auto flex gap-4 py-2 px-0.5 pb-3">
       {notices.map((notice) => (
         <NoticeCard key={notice.id} notice={notice} />
       ))}
@@ -54,32 +67,28 @@ export default function NoticeSlider({ societyId }: { societyId: number }) {
 
 function NoticeCard({ notice }: { notice: Notice }) {
   return (
-    <div className="min-w-[300px] bg-white rounded-xl shadow-md p-5 flex flex-col justify-between border">
-      
+    <div
+      className="min-w-[280px] max-w-[280px] rounded-xl border p-4 flex flex-col justify-between transition-shadow duration-150 hover:shadow-md"
+      style={{
+        background: "var(--card)",
+        borderColor: "var(--border)",
+        boxShadow: "var(--shadow-sm)",
+      }}
+    >
       <div>
-        <h3 className="text-lg text-black font-semibold mb-2">
+        <h3 className="text-sm font-semibold mb-1.5 leading-snug" style={{ color: "var(--foreground)" }}>
           {notice.title}
         </h3>
-
-        <p className="text-sm text-gray-600 mb-3">
+        <p className="text-xs leading-relaxed line-clamp-3 mb-3" style={{ color: "var(--muted-foreground)" }}>
           {notice.content}
         </p>
-
-        <div className="flex flex-wrap gap-2 mb-2">
-          {notice.tags.map((tag, i) => (
-            <span
-              key={i}
-              className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
       </div>
-
-      <div className="text-xs text-gray-500 flex justify-between mt-2">
-        <span>{notice.authorName}</span>
-        <span>
+      <div
+        className="flex justify-between items-center text-xs pt-2 border-t"
+        style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+      >
+        <span className="font-medium">{notice.authorName}</span>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.7rem" }}>
           {new Date(notice.createdAt).toLocaleDateString()}
         </span>
       </div>

@@ -115,54 +115,90 @@ const sendusers = async () => {
   }
 };
 
+const statusStyle = (status: string) => {
+  if (status === "OVERDUE") return { background: "#fef2f2", color: "#dc2626" };
+  if (status === "PENDING") return { background: "#fffbeb", color: "#d97706" };
+  return { background: "#f0fdf4", color: "#16a34a" };
+};
+
 return (
-  <div className="max-w-6xl mx-auto bg-white shadow-md rounded-xl p-8">
-
+  <div
+    className="rounded-xl border overflow-hidden"
+    style={{ background: "var(--card)", borderColor: "var(--border)", boxShadow: "var(--shadow-sm)" }}
+  >
     {/* Header */}
-    <div className="flex justify-between items-center mb-6">
-      <h1 className="text-2xl font-bold text-gray-800">
-        Manage Residents
-      </h1>
+    <div
+      className="flex justify-between items-center px-6 py-4 border-b"
+      style={{ borderColor: "var(--border)" }}
+    >
+      <div>
+        <h2 className="text-base font-semibold" style={{ color: "var(--foreground)" }}>
+          Manage Residents
+        </h2>
+        <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+          {users.length} residents total
+        </p>
+      </div>
 
-      {/* Footer Button */}
-      <div className="flex justify-between items-center space-x-4">
+      <div className="flex items-center gap-2">
         <button
-          onClick={sendusers}
-          disabled={loading || selectedIds.length === 0}
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow disabled:opacity-40 transition"
+          onClick={selectAll}
+          className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors duration-150"
+          style={{
+            background: "var(--secondary)",
+            borderColor: "var(--border)",
+            color: "var(--foreground)",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "var(--muted)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "var(--secondary)")}
         >
-          {loading ? "Sending..." : "Send Invoices via Email"}
+          {selectedIds.length === users.length && users.length > 0 ? "Unselect All" : "Select All"}
         </button>
 
         <button
-          onClick={selectAll}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition"
+          onClick={sendusers}
+          disabled={loading || selectedIds.length === 0}
+          className="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 disabled:opacity-40"
+          style={{
+            background: "var(--primary)",
+            color: "var(--primary-foreground)",
+          }}
+          onMouseEnter={(e) => !loading && (e.currentTarget.style.opacity = "0.9")}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
         >
-          {selectedIds.length === users.length ? "Unselect All" : "Select All"}
+          {loading ? "Sending…" : `Send Invoices${selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}`}
         </button>
       </div>
     </div>
 
     {/* Table */}
-    <div className="overflow-x-auto border rounded-lg">
-      <table className="min-w-full text-sm text-gray-700">
-        <thead className="bg-gray-100 text-gray-700 uppercase text-xs tracking-wider">
-          <tr>
-            <th className="p-3"></th>
-            <th className="p-3 text-left">Wing</th>
-            <th className="p-3 text-left">Flat</th>
-            <th className="p-3 text-left">Name</th>
-            <th className="p-3 text-left">Phone</th>
-            <th className="p-3 text-left">Email</th>
-            <th className="p-3 text-left">Pending</th>
-            <th className="p-3 text-left">Status</th>
+    <div className="overflow-x-auto">
+      <table className="min-w-full text-sm">
+        <thead>
+          <tr style={{ background: "var(--muted)" }}>
+            <th className="p-3 w-10"></th>
+            {["Wing", "Flat", "Name", "Phone", "Email", "Pending", "Status"].map((h) => (
+              <th
+                key={h}
+                className="p-3 text-left text-xs font-mono uppercase tracking-wider"
+                style={{ color: "var(--muted-foreground)", fontFamily: "'Space Mono', monospace" }}
+              >
+                {h}
+              </th>
+            ))}
           </tr>
         </thead>
 
         <tbody>
-          {users.length === 0 ? (
+          {loadingUsers ? (
             <tr>
-              <td colSpan={8} className="text-center p-10 text-gray-400">
+              <td colSpan={8} className="text-center py-12 text-sm" style={{ color: "var(--muted-foreground)" }}>
+                Loading residents…
+              </td>
+            </tr>
+          ) : users.length === 0 ? (
+            <tr>
+              <td colSpan={8} className="text-center py-12 text-sm" style={{ color: "var(--muted-foreground)" }}>
                 No residents found
               </td>
             </tr>
@@ -170,36 +206,45 @@ return (
             users.map((user) => (
               <tr
                 key={user.userId}
-                className="border-t hover:bg-gray-50 transition"
+                className="border-t transition-colors duration-100"
+                style={{
+                  borderColor: "var(--border)",
+                  background: selectedIds.includes(user.userId) ? "rgba(232,93,38,0.04)" : "transparent",
+                }}
+                onMouseEnter={(e) => {
+                  if (!selectedIds.includes(user.userId))
+                    e.currentTarget.style.background = "var(--muted)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = selectedIds.includes(user.userId)
+                    ? "rgba(232,93,38,0.04)"
+                    : "transparent";
+                }}
               >
                 <td className="p-3">
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(user.userId)}
                     onChange={() => toggleSelect(user.userId)}
-                    className="w-4 h-4"
+                    className="w-4 h-4 rounded"
+                    style={{ accentColor: "var(--primary)" }}
                   />
                 </td>
 
-                <td className="p-3 font-medium">{user.wing}</td>
-                <td className="p-3">{user.flatNumber}</td>
-                <td className="p-3">{user.name}</td>
-                <td className="p-3">{user.phone}</td>
-                <td className="p-3">{user.email}</td>
+                <td className="p-3 font-medium" style={{ color: "var(--foreground)" }}>{user.wing}</td>
+                <td className="p-3" style={{ color: "var(--foreground)" }}>{user.flatNumber}</td>
+                <td className="p-3 font-medium" style={{ color: "var(--foreground)" }}>{user.name}</td>
+                <td className="p-3" style={{ color: "var(--muted-foreground)" }}>{user.phone}</td>
+                <td className="p-3" style={{ color: "var(--muted-foreground)" }}>{user.email}</td>
 
-                <td className="p-3 font-semibold text-gray-800">
-                  ₹ {user.totalPendingAmount}
+                <td className="p-3 font-semibold" style={{ color: "var(--foreground)", fontFamily: "'Space Mono', monospace", fontSize: "0.8rem" }}>
+                  ₹{user.totalPendingAmount}
                 </td>
 
                 <td className="p-3">
                   <span
-                    className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                      user.status === "OVERDUE"
-                        ? "bg-red-100 text-red-600"
-                        : user.status === "PENDING"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-green-100 text-green-600"
-                    }`}
+                    className="px-2.5 py-1 text-xs font-semibold rounded-full"
+                    style={statusStyle(user.status)}
                   >
                     {user.status}
                   </span>
@@ -212,5 +257,4 @@ return (
     </div>
   </div>
 );
-
 }

@@ -1,26 +1,55 @@
 @import "tailwindcss";
 
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f3ee;
+  --foreground: #1a1410;
+  --card: #ffffff;
+  --card-foreground: #1a1410;
+  --border: #e0d8cc;
+  --input: #f0ece4;
+  --primary: #e85d26;
+  --primary-foreground: #ffffff;
+  --secondary: #f0ece4;
+  --secondary-foreground: #1a1410;
+  --muted: #f0ece4;
+  --muted-foreground: #7a6e62;
+  --accent: #1a1410;
+  --accent-foreground: #f5f3ee;
+  --destructive: #d63030;
+  --ring: #e85d26;
+  --radius: 0.5rem;
+  --shadow-sm: 0 1px 2px 0 rgba(26,20,16,0.06);
+  --shadow: 0 2px 8px 0 rgba(26,20,16,0.10);
+  --shadow-md: 0 4px 16px 0 rgba(26,20,16,0.13);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'Space Mono', monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--muted); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }

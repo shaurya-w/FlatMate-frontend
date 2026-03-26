@@ -20,22 +20,50 @@ export default function AdminDashboard() {
 
   const { user, loading } = useAuth("ADMIN");
 
-  if (loading) return <p>Loading...</p>;
-  if (!user) return <p>User not found</p>;
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--background)" }}>
+      <div className="flex flex-col items-center gap-3">
+        <div
+          className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+          style={{ borderColor: "var(--primary)", borderTopColor: "transparent" }}
+        />
+        <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>Loading dashboard…</p>
+      </div>
+    </div>
+  );
+  if (!user) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--background)" }}>
+      <p style={{ color: "var(--muted-foreground)" }}>User not found</p>
+    </div>
+  );
 
 
   return (
 
       <DashboardLayout name={user.name}>
 
-      {/* Users Section */}
+      {/* Page header */}
+      <div className="mb-6">
+        <p
+          className="text-xs font-mono uppercase tracking-widest mb-1"
+          style={{ color: "var(--primary)", fontFamily: "'Space Mono', monospace" }}
+        >
+          Admin Panel
+        </p>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
+          Society Dashboard
+        </h1>
+      </div>
+
+      {/* Metrics */}
       <AdminMetrics/>
-      <div className="flex align-center justify-between mb-4 p-2">
+      
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
          <SearchBar />
          <NoticeModal societyId={1} />
       </div>
       
-     
       <RenderUsers />
       
 

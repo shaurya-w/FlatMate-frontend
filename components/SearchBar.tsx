@@ -48,54 +48,71 @@ export default function SearchBar() {
   };
 
   return (
-    <div className="w-full max-w-md">
-
+    <div className="w-full max-w-sm relative">
       <div className="relative">
-
+        <svg
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+          style={{ color: "var(--muted-foreground)" }}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+        </svg>
         <input
           type="text"
-          placeholder="Search residents by name or email..."
+          placeholder="Search residents…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="text-black w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border transition-all duration-150"
+          style={{
+            background: "var(--card)",
+            border: "1.5px solid var(--border)",
+            color: "var(--foreground)",
+          }}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
+          onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
         />
-
         {loading && (
-          <span className="absolute right-3 top-2 text-sm text-gray-500">
-            Searching...
+          <span
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs"
+            style={{ color: "var(--muted-foreground)" }}
+          >
+            …
           </span>
         )}
-
       </div>
 
       {results.length > 0 && (
-        <div className="mt-2 border rounded-md bg-white shadow-sm max-h-60 overflow-y-auto">
-
+        <div
+          className="absolute z-20 w-full mt-1 rounded-lg border overflow-hidden"
+          style={{
+            background: "var(--card)",
+            borderColor: "var(--border)",
+            boxShadow: "var(--shadow-md)",
+            maxHeight: "240px",
+            overflowY: "auto",
+          }}
+        >
           {results.map((resident) => (
             <div
               key={resident.id}
-              className="p-3 border-b last:border-none hover:bg-gray-50 cursor-pointer"
+              className="px-4 py-2.5 cursor-pointer transition-colors duration-100 border-b last:border-none"
+              style={{ borderColor: "var(--border)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--muted)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               onClick={() => console.log("Selected:", resident)}
             >
-              <div className="font-medium text-black">
+              <div className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
                 {resident.name}
               </div>
-
-              <div className="text-sm text-gray-600">
+              <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>
                 {resident.email}
+                {resident.flatNumber && ` · Flat ${resident.flatNumber}`}
               </div>
-
-              {resident.flatNumber && (
-                <div className="text-xs text-gray-500">
-                  Flat: {resident.flatNumber}
-                </div>
-              )}
             </div>
           ))}
-
         </div>
       )}
-
     </div>
   );
 }
