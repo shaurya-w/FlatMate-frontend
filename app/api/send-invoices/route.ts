@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 import { jsPDF } from "jspdf";
 import nodemailer from "nodemailer";
+import { i } from "framer-motion/client";
 
 export const runtime = "nodejs";
 
@@ -206,13 +207,13 @@ function generateInvoicePDF(invoice: any): ArrayBuffer {
 
   y += 10;
 
-  doc.setFontSize(11);
-  doc.text("Amount Paid:", summaryStart, y);
-  doc.text(`${invoice.amountPaid}`, pageWidth - 20, y, {
-    align: "right",
-  });
+  // doc.setFontSize(11);
+  // doc.text("Amount Paid:", summaryStart, y);
+  // doc.text(`${invoice.amountPaid}`, pageWidth - 20, y, {
+  //   align: "right",
+  // // });
 
-  y += 25;
+  // y += 25;
 
   /* ================= SIGNATORY ================= */
 
@@ -279,7 +280,9 @@ console.log("Email transporter configured");
    SEND EMAIL
 ========================= */
 async function sendInvoiceEmail(invoice: any) {
+  console.log(invoice);
   const pdfBuffer = generateInvoicePDF(invoice);
+  console.log("Generated PDF for invoice:", invoice.invoiceId, invoice.email, invoice.lineItems?.length, invoice.societyName);
 
   const info = await transporter.sendMail({
     from: `"My Society Billing" <${process.env.SYSTEM_EMAIL}>`,

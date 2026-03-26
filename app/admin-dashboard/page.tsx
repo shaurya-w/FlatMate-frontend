@@ -4,7 +4,6 @@ import RenderUsers from "../../components/RenderUsers";
 import AdminMetrics from "../../components/AdminMetrics";
 import DashboardLayout from "../../components/layout/dashboardlayout";
 import NoticeModal from "../../components/ui/NoticeModal";
-import SearchBar from "../../components/SearchBar";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import router from "next/router";
@@ -57,10 +56,7 @@ export default function AdminDashboard() {
 
       {/* Metrics */}
       <AdminMetrics/>
-      
-      {/* Toolbar */}
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-         <SearchBar />
+      <div className="flex align-center justify-between mb-4 p-2">
          <NoticeModal societyId={1} />
       </div>
       

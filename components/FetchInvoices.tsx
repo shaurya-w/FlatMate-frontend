@@ -1,99 +1,208 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import PayButton from "./InvoicePayButton"
+import { useEffect, useState } from "react";
 
-
-export interface Invoice {
-  id: number
-  totalAmount: number
-  status: "ISSUED" | "PAID" | "OVERDUE"
-  dueDate: string
+interface InvoiceSummary {
+  invoiceId: number;
+  totalAmount: number;
+  amountPaid: number;
+  pendingAmount: number;
+  status: "ISSUED" | "OVERDUE" | "PAID";
+  billingMonth: string;
+  dueDate: string;
 }
 
-const API = process.env.NEXT_PUBLIC_API_BASE_URL
-
 export default function FetchInvoices({ userId }: { userId: number }) {
+  const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [payingId, setPayingId] = useState<number | null>(null);
+  const [refresh, setRefresh] = useState(0);
 
-  //const [invoices, setInvoices] = useState<Invoice[]>([])
-  //const [loading, setLoading] = useState(true)
+  // =========================
+  // 1. FETCH INVOICES
+  // =========================
+  useEffect(() => {
+  const fetchInvoices = async () => {
+    console.log("Fetching invoices for user:", userId);
 
-          // Mock data for testing
-       const invoices: Invoice[] = [
-        { id: 1, totalAmount: 500, status: "ISSUED", dueDate: "2024-07-01" },
-        { id: 2, totalAmount: 1500, status: "PAID", dueDate: "2024-06-15" },
-        { id: 3, totalAmount: 750, status: "OVERDUE", dueDate: "2024-06-10" },
-      ]
-//   useEffect(() => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/user/${userId}/pending`,
+        { credentials: "include" }
+      );
 
-//     async function loadInvoices() {
+      console.log("Invoice API status:", res.status);
 
+      const data = await res.json();
 
+      console.log("Invoices received:", data);
 
-//       const res = await fetch(`${API}/users/${userId}/invoices`)
-//       const data: Invoice[] = await res.json()
-
-//       setInvoices(data)
-//       setLoading(false)
-//     }
-
-//     loadInvoices()
-
-//   }, [userId])
-
-//   if (loading) return <p>Loading invoices...</p>
-
-//   if (invoices.length === 0) {
-//     return <p>No invoices found</p>
-//   }
-
-  const statusStyle = (status: string) => {
-    if (status === "OVERDUE") return { background: "#fef2f2", color: "#dc2626" };
-    if (status === "PAID") return { background: "#f0fdf4", color: "#16a34a" };
-    return { background: "#fffbeb", color: "#d97706" };
+      setInvoices(data);
+    } catch (err) {
+      console.error("Error fetching invoices", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  fetchInvoices();
+}, [userId, refresh]);
+
+  // =========================
+  // 2. HANDLE PAYMENT
+  // =========================
+  const handlePayNow = async (invoiceId: number) => {
+   // console.log("Pay Now clicked for invoice:", invoiceId);
+
+    try {
+      setPayingId(invoiceId);
+
+      // =========================
+      // STEP 1: CREATE ORDER
+      // =========================
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/create-order/${invoiceId}`,
+        { method: "POST", credentials: "include" }
+      );
+
+     // console.log(" Order API status:", res.status);
+
+      const order = await res.json();
+
+      if (!order?.orderId) {
+        console.error("Missing orderId! Backend issue.");
+        return;
+      }
+
+      // =========================
+      // STEP 2: OPEN RAZORPAY
+      // =========================
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY,
+        amount: order.amount,
+        currency: order.currency,
+        name: "SocietyPay",
+        description: "Maintenance Payment",
+        order_id: order.orderId,
+
+        // =========================
+        // STEP 3: PAYMENT SUCCESS HANDLER
+        // =========================
+       handler: async function (response: any) {
+
+  try {
+    console.log("Verifying payment on backend...");
+
+    const verifyRes = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/verify`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          invoiceId,
+          razorpayOrderId: response.razorpay_order_id,
+          razorpayPaymentId: response.razorpay_payment_id,
+          razorpaySignature: response.razorpay_signature,
+        }),
+      }
+    );
+
+   // console.log("Verify API status:", verifyRes.status);
+
+    const verifyData = await verifyRes.json();
+
+    if (verifyData.success) {
+     // console.log("Payment verified and DB updated");
+
+      // trigger refetch
+      setRefresh((prev) => prev + 1);
+
+      alert("Payment successful");
+    } else {
+      console.error("Verification failed");
+      alert("Payment verification failed. Please contact support.");
+    }
+  } catch (err) {
+    console.error("Error verifying payment:", err);
+  }
+},
+
+        // =========================
+        // USER CLOSED PAYMENT
+        // =========================
+        modal: {
+          ondismiss: function () {
+            console.log("User closed Razorpay popup");
+          },
+        },
+
+        theme: {
+          color: "#f97316",
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+
+    } catch (err) {
+      console.error("❌ Payment failed:", err);
+      alert("Payment failed");
+    } finally {
+      setPayingId(null);
+    }
+  };
+
+  // =========================
+  // UI
+  // =========================
+  if (loading) return <p className="text-gray-500 mt-4">Loading invoices...</p>;
+
+  if (invoices.length === 0)
+    return (
+      <p className="text-green-600 mt-4 font-medium">
+        No pending dues.
+      </p>
+    );
+
   return (
-    <div className="space-y-2">
-      {invoices.map((invoice) => (
+    <div className="mt-4 space-y-4">
+      {invoices.map((inv) => (
         <div
-          key={invoice.id}
-          className="flex items-center justify-between p-4 rounded-lg border transition-colors duration-100"
-          style={{
-            background: "var(--secondary)",
-            borderColor: "var(--border)",
-          }}
+          key={inv.invoiceId}
+          className="bg-white border rounded-xl p-4 shadow-sm flex justify-between items-center"
         >
-          <div className="flex items-center gap-4">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold"
-              style={{ background: "var(--muted)", color: "var(--muted-foreground)", fontFamily: "'Space Mono', monospace" }}
-            >
-              #{invoice.id}
-            </div>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: "var(--foreground)", fontFamily: "'Space Mono', monospace" }}>
-                ₹{invoice.totalAmount}
-              </p>
-              <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                Due {new Date(invoice.dueDate).toLocaleDateString()}
-              </p>
-            </div>
+          <div>
+            <p className="text-gray-800 font-semibold">
+              ₹{inv.pendingAmount}
+            </p>
+
+            <p className="text-sm text-gray-500">
+              Due: {inv.dueDate}
+            </p>
+
+            <span className="text-xs px-2 py-1 rounded-full mt-1 inline-block">
+              {inv.status}
+            </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span
-              className="text-xs font-semibold px-2.5 py-1 rounded-full"
-              style={statusStyle(invoice.status)}
-            >
-              {invoice.status}
-            </span>
-            {invoice.status !== "PAID" && (
-              <PayButton invoiceId={invoice.id} />
-            )}
-          </div>
+          <button
+            onClick={() => handlePayNow(inv.invoiceId)}
+            disabled={payingId === inv.invoiceId}
+            className={`px-4 py-2 rounded-lg text-sm text-white ${
+              payingId === inv.invoiceId
+                ? "bg-gray-400"
+                : "bg-orange-500 hover:bg-orange-600"
+            }`}
+          >
+            {payingId === inv.invoiceId ? "Processing..." : "Pay Now"}
+          </button>
         </div>
       ))}
     </div>
-  )
+  );
 }
