@@ -9,6 +9,7 @@ import ContactsSectionUser from "../admin-dashboard/settings/ContactsSectionUser
 import Script from "next/script";
 import MyComplaints from "@/components/MyComplaints";
 
+
 export default function UserDashboard() {
   const { user, loading } = useAuth("USER");
 
