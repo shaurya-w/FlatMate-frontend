@@ -35,11 +35,13 @@ export default function Login() {
                 router.push("/unauthorized");
             }
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Login error:", err);
-            setError(err.response?.data || "Login failed");
-        } finally {
-            setLoading(false); // ← add this
+            if (axios.isAxiosError(err)) {
+                setError(err.response?.data || "Login failed");
+            } else {
+                setError("Login failed");
+            }
         }
   };
 
