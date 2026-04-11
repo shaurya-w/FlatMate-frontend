@@ -14,32 +14,34 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-  try {
+        setLoading(true);   // ← add this
+        setError("");       // ← clear previous errors
+        try {
+            await axios.post(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`,
+                { email, password },
+                { withCredentials: true }
+            );
 
+            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
+                withCredentials: true,
+            });
 
-    await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`,
-      { email, password },
-      { withCredentials: true }
-    );
+            if (data.role === "ADMIN") {
+                router.push("/admin-dashboard");
+            } else if (data.role === "USER") {
+                router.push("/user-dashboard");
+            } else {
+                router.push("/unauthorized");
+            }
 
-    const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
-      withCredentials: true,
-    });
-
-    if (data.role === "ADMIN") {
-      router.push("/admin-dashboard");
-    } else if (data.role === "USER") {
-      router.push("/user-dashboard");
-    } else {
-      router.push("/unauthorized");
-    }
-
-  } catch (err: any) {
-    console.error("Login error:", err);
-    setError(err.response?.data || "Login failed");
-  }
-};
+        } catch (err: any) {
+            console.error("Login error:", err);
+            setError(err.response?.data || "Login failed");
+        } finally {
+            setLoading(false); // ← add this
+        }
+  };
 
   return (
     <div
