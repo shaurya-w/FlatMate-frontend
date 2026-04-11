@@ -158,19 +158,26 @@ export default function Login() {
               </div>
             )}
 
-            <button
-              onClick={handleLogin}
-              disabled={loading}
-              className="w-full py-2.5 text-sm font-semibold rounded-lg transition-all duration-150 disabled:opacity-50"
-              style={{
-                background: "var(--primary)",
-                color: "var(--primary-foreground)",
-              }}
-              onMouseEnter={(e) => !loading && (e.currentTarget.style.opacity = "0.9")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-            >
-              {loading ? "Signing in..." : "Sign in"}
-            </button>
+              <button
+                  onClick={handleLogin}
+                  disabled={loading}
+                  className="w-full py-2.5 text-sm font-semibold rounded-lg transition-all duration-150 disabled:opacity-50"
+                  style={{
+                      background: "var(--primary)",
+                      color: "var(--primary-foreground)",
+                  }}
+                  onMouseEnter={(e) => !loading && (e.currentTarget.style.opacity = "0.9")}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+              >
+                  {loading ? "Signing in..." : "Sign in"}
+              </button>
+
+              {/* ← ADD THIS */}
+              <p className="text-center text-sm" style={{ color: "var(--muted-foreground)" }}>
+                  <a href="/forgot-password" className="hover:underline" style={{ color: "var(--primary)" }}>
+                      Forgot your password?
+                  </a>
+              </p>
           </div>
 
         </div>
