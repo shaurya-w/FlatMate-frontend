@@ -61,9 +61,7 @@ export default function AdminDashboard() {
          <NoticeModal societyId={1} />
       </div>
 
-          import AdminComplaintBoard from "@/components/AdminComplaintBoard";
 
-          // In the return, after <RenderUsers />:
           <RenderUsers />
 
           <div className="mb-8 mt-8">
