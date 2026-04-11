@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import router from "next/router";
 import { api } from "@/lib/axios";
 import { useAuth } from "@/hooks/useAuth";
+import AdminComplaintBoard from "@/components/AdminComplaintBoard";
 
 interface User {
   name: string;
@@ -59,9 +60,18 @@ export default function AdminDashboard() {
       <div className="flex align-center justify-between mb-4 p-2">
          <NoticeModal societyId={1} />
       </div>
-      
-      <RenderUsers />
-      
+
+          import AdminComplaintBoard from "@/components/AdminComplaintBoard";
+
+          // In the return, after <RenderUsers />:
+          <RenderUsers />
+
+          <div className="mb-8 mt-8">
+              <h2 className="text-xl font-bold mb-4" style={{ color: "var(--foreground)" }}>
+                  Complaint Board
+              </h2>
+              <AdminComplaintBoard societyId={1} />
+          </div>
 
     </DashboardLayout>  
   );
