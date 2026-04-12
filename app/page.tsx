@@ -14,32 +14,36 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-  try {
+        setLoading(true);   // ← add this
+        setError("");       // ← clear previous errors
+        try {
+            await axios.post(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`,
+                { email, password },
+                { withCredentials: true }
+            );
 
+            const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
+                withCredentials: true,
+            });
 
-    await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`,
-      { email, password },
-      { withCredentials: true }
-    );
+            if (data.role === "ADMIN") {
+                router.push("/admin-dashboard");
+            } else if (data.role === "USER") {
+                router.push("/user-dashboard");
+            } else {
+                router.push("/unauthorized");
+            }
 
-    const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
-      withCredentials: true,
-    });
-
-    if (data.role === "ADMIN") {
-      router.push("/admin-dashboard");
-    } else if (data.role === "USER") {
-      router.push("/user-dashboard");
-    } else {
-      router.push("/unauthorized");
-    }
-
-  } catch (err: any) {
-    console.error("Login error:", err);
-    setError(err.response?.data || "Login failed");
-  }
-};
+        } catch (err: unknown) {
+            console.error("Login error:", err);
+            if (axios.isAxiosError(err)) {
+                setError(err.response?.data || "Login failed");
+            } else {
+                setError("Login failed");
+            }
+        }
+  };
 
   return (
     <div
@@ -154,19 +158,26 @@ export default function Login() {
               </div>
             )}
 
-            <button
-              onClick={handleLogin}
-              disabled={loading}
-              className="w-full py-2.5 text-sm font-semibold rounded-lg transition-all duration-150 disabled:opacity-50"
-              style={{
-                background: "var(--primary)",
-                color: "var(--primary-foreground)",
-              }}
-              onMouseEnter={(e) => !loading && (e.currentTarget.style.opacity = "0.9")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-            >
-              {loading ? "Signing in..." : "Sign in"}
-            </button>
+              <button
+                  onClick={handleLogin}
+                  disabled={loading}
+                  className="w-full py-2.5 text-sm font-semibold rounded-lg transition-all duration-150 disabled:opacity-50"
+                  style={{
+                      background: "var(--primary)",
+                      color: "var(--primary-foreground)",
+                  }}
+                  onMouseEnter={(e) => !loading && (e.currentTarget.style.opacity = "0.9")}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+              >
+                  {loading ? "Signing in..." : "Sign in"}
+              </button>
+
+              {/* ← ADD THIS */}
+              <p className="text-center text-sm" style={{ color: "var(--muted-foreground)" }}>
+                  <a href="/forgot-password" className="hover:underline" style={{ color: "var(--primary)" }}>
+                      Forgot your password?
+                  </a>
+              </p>
           </div>
 
         </div>
