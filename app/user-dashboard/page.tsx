@@ -16,27 +16,9 @@ export default function UserDashboard() {
 
   return (
     <>
-    
-    <Script
-      src="https://checkout.razorpay.com/v1/checkout.js"
-      strategy="lazyOnload" />
-      
-      <DashboardLayout name={user.name}>
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <p className="text-orange-500 text-sm">Welcome back,</p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-            {user.name}
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Here&apos;s what&apos;s happening in your society
-          </p>
-        </div>
-    <>
-    
-    <Script
-      src="https://checkout.razorpay.com/v1/checkout.js"
-      strategy="lazyOnload" />
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="lazyOnload" />
       
       <DashboardLayout name={user.name}>
         {/* Welcome Section */}
@@ -54,16 +36,7 @@ export default function UserDashboard() {
         <div className="bg-white rounded-xl border shadow-sm p-6 mb-8">
           <h2 className="text-xl font-bold text-gray-900">A-404</h2>
           <p className="text-gray-600">Tower A, Sunrise Apartments</p>
-        {/* Flat Details */}
-        <div className="bg-white rounded-xl border shadow-sm p-6 mb-8">
-          <h2 className="text-xl font-bold text-gray-900">A-404</h2>
-          <p className="text-gray-600">Tower A, Sunrise Apartments</p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 text-sm">
-            <div>
-              <p className="text-gray-500">Floor</p>
-              <p className="font-medium text-gray-900">4th Floor</p>
-            </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 text-sm">
             <div>
               <p className="text-gray-500">Floor</p>
@@ -74,17 +47,7 @@ export default function UserDashboard() {
               <p className="text-gray-500">Residents</p>
               <p className="font-medium text-gray-900">4 Members</p>
             </div>
-            <div>
-              <p className="text-gray-500">Residents</p>
-              <p className="font-medium text-gray-900">4 Members</p>
-            </div>
 
-            <div>
-              <p className="text-gray-500">Registered Owner</p>
-              <p className="font-medium text-gray-900">{user.name}</p>
-            </div>
-          </div>
-        </div>
             <div>
               <p className="text-gray-500">Registered Owner</p>
               <p className="font-medium text-gray-900">{user.name}</p>
@@ -97,16 +60,7 @@ export default function UserDashboard() {
         <div className="flex items-center justify-between mb-7">
           <NoticeSlider societyId={1} />
         </div>
-        {/* Community Notices */}
-        <h2 className="text-black text-xl font-semibold">Community Notices</h2>
-        <div className="flex items-center justify-between mb-7">
-          <NoticeSlider societyId={1} />
-        </div>
 
-        {/* Complaint Button */}
-        <div className="flex justify-end">
-          <ComplaintModal />
-        </div>
         {/* Complaint Button */}
         <div className="flex justify-end">
           <ComplaintModal />
@@ -123,6 +77,7 @@ export default function UserDashboard() {
           <h2 className="text-black text-xl font-semibold">Contact Information</h2>
           <ContactsSectionUser />
         </div>
-      </DashboardLayout></>
+      </DashboardLayout>
+    </>
   );
 }
