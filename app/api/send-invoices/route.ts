@@ -2,20 +2,19 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 import { jsPDF } from "jspdf";
 import nodemailer from "nodemailer";
-import { i } from "framer-motion/client";
 
 export const runtime = "nodejs";
 
 console.log("Send Invoices API Route Loaded");
 
-
 export async function POST(req: Request) {
   try {
-    const { invoiceIds } = await req.json();    
+    const { invoiceIds } = await req.json();
 
-    console.log("Fetching invoices for:", invoiceIds);
+    console.log("==== SEND INVOICES START ====");
+    console.log("Invoice IDs received:", invoiceIds);
+    console.log("Cookie present:", !!req.headers.get("cookie"));
 
-    // Forward browser cookies to Spring
     const cookieHeader = req.headers.get("cookie");
 
     const springRes = await axios.post(
@@ -30,10 +29,10 @@ export async function POST(req: Request) {
     );
 
     const invoices = springRes.data;
-    console.log(springRes.data);
 
     console.log("SPRING STATUS:", springRes.status);
     console.log("IS ARRAY:", Array.isArray(invoices));
+    console.log("TOTAL INVOICES RECEIVED:", Array.isArray(invoices) ? invoices.length : 0);
 
     if (!Array.isArray(invoices)) {
       return NextResponse.json(
@@ -42,9 +41,18 @@ export async function POST(req: Request) {
       );
     }
 
-    // Run all emails in parallel
+    if (invoices.length > 0) {
+      console.log("SAMPLE INVOICE STRUCTURE:", JSON.stringify(invoices[0], null, 2));
+    }
+
     const emailPromises = invoices.map(async (invoice: any) => {
       try {
+        console.log(`\n---- PROCESSING INVOICE #${invoice.invoiceId} ----`);
+        console.log("Email:", invoice.email);
+        console.log("Name:", invoice.name);
+        console.log("Society:", invoice.societyName);
+        console.log("LineItems count:", invoice.lineItems?.length ?? 0);
+
         if (!invoice.email) {
           return {
             invoiceId: invoice.invoiceId,
@@ -53,14 +61,19 @@ export async function POST(req: Request) {
           };
         }
 
+        if (!invoice.lineItems || invoice.lineItems.length === 0) {
+          console.warn(`Invoice ${invoice.invoiceId} has no line items`);
+        }
+
         await sendInvoiceEmail(invoice);
 
-        return {
-          invoiceId: invoice.invoiceId,
-          status: "SUCCESS",
-        };
+        return { invoiceId: invoice.invoiceId, status: "SUCCESS" };
       } catch (err: any) {
-        console.error("EMAIL ERROR:", err.message);
+        console.error("==== EMAIL FAILED ====");
+        console.error({
+          invoiceId: invoice.invoiceId,
+          error: err.message,
+        });
 
         return {
           invoiceId: invoice.invoiceId,
@@ -78,190 +91,362 @@ export async function POST(req: Request) {
         : { status: "FAILED", reason: result.reason }
     );
 
-    return NextResponse.json({
-      success: true,
-      summary,
-    });
+    console.log("==== FINAL SUMMARY ====");
+    console.log(JSON.stringify(summary, null, 2));
 
+    return NextResponse.json({ success: true, summary });
   } catch (error: any) {
     console.error("ROUTE ERROR:", error.response?.data || error.message);
-
-    return NextResponse.json(
-      { error: "Something broke" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Something broke" }, { status: 500 });
   }
 }
 
+/* =========================
+   HELPERS
+========================= */
+
+async function fetchImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const res = await axios.get(url, {
+      responseType: "arraybuffer",
+      timeout: 8000,
+    });
+    const mime = res.headers["content-type"] ?? "image/png";
+    const b64 = Buffer.from(res.data as ArrayBuffer).toString("base64");
+    return `data:${mime};base64,${b64}`;
+  } catch (err) {
+    console.warn("Image fetch failed:", {
+      url,
+      error: (err as any).message,
+    });
+    return null;
+  }
+}
+
+function formatDate(dateStr: string): string {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function formatBillingMonth(dateStr: string): string {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-IN", {
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function fmt(amount: number | null | undefined): string {
+  if (amount == null) return "₹0.00";
+  return `₹${Number(amount).toFixed(2)}`;
+}
 
 /* =========================
    PDF GENERATION
 ========================= */
-function generateInvoicePDF(invoice: any): ArrayBuffer {
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.getWidth();
 
-  let y = 20;
+async function generateInvoicePDF(invoice: any): Promise<ArrayBuffer> {
+  console.log(`Rendering PDF for Invoice #${invoice.invoiceId}`);
+  console.log("Line items passed to PDF:", invoice.lineItems?.length ?? 0);
 
-  /* ================= LOGO ================= */
+  if (invoice.lineItems?.length > 0) {
+    console.log("First line item:", invoice.lineItems[0]);
+  }
 
-  if (invoice.logoUrl) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const PW = doc.internal.pageSize.getWidth();
+  const PH = doc.internal.pageSize.getHeight();
+
+  const L = 15;
+  const R = PW - 15;
+  const CW = R - L;
+
+  const PRIMARY = "#166534";
+  const ACCENT = "#22c55e";
+  const LIGHT_BG = "#f0fdf4";
+  const BORDER = "#bbf7d0";
+  const DANGER = "#dc2626";
+  const MUTED = "#6b7280";
+  const TEXT = "#111827";
+
+  const hexToRGB = (hex: string): [number, number, number] => {
+    const n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  };
+
+  const [logoData, stampData] = await Promise.all([
+    invoice.logoUrl ? fetchImageAsBase64(invoice.logoUrl) : Promise.resolve(null),
+    invoice.stampImageUrl ? fetchImageAsBase64(invoice.stampImageUrl) : Promise.resolve(null),
+  ]);
+
+  let y = 0;
+
+  /* ============================================================
+     HEADER
+  ============================================================ */
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, PW, 42, "F");
+
+  doc.setDrawColor(...hexToRGB(BORDER));
+  doc.setLineWidth(0.4);
+  doc.line(L, 42, R, 42);
+
+  if (logoData) {
     try {
-      doc.addImage(invoice.logoUrl, "PNG", 20, 10, 25, 25);
-    } catch (err) {
-      console.warn("Logo load failed");
+      doc.addImage(logoData, "PNG", L, 8, 24, 24);
+    } catch {
+      console.warn("Logo render failed");
     }
   }
 
-  /* ================= SOCIETY HEADER ================= */
+  const textStartX = logoData ? L + 30 : L;
 
-  doc.setFontSize(18);
-  doc.text("Maintenance Invoice", pageWidth / 2, 20, { align: "center" });
+  doc.setTextColor(...hexToRGB(PRIMARY));
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(17);
+  doc.text(invoice.societyName ?? "Society Name", textStartX, 14);
 
+  if (invoice.societyAddress) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...hexToRGB(MUTED));
+    const addrLines = doc.splitTextToSize(invoice.societyAddress, 95);
+    doc.text(addrLines.slice(0, 2), textStartX, 20);
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(...hexToRGB(PRIMARY));
+  doc.text("INVOICE", R, 13, { align: "right" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...hexToRGB(MUTED));
+  doc.text(`Invoice #${invoice.invoiceId}`, R, 19, { align: "right" });
+  doc.text(`Billing Month: ${formatBillingMonth(invoice.billingMonth)}`, R, 24, {
+    align: "right",
+  });
+
+  y = 50;
+
+  /* ============================================================
+     INFO CARDS
+  ============================================================ */
+  const leftBoxX = L;
+  const leftBoxY = y;
+  const leftBoxW = CW * 0.48;
+  const leftBoxH = 26;
+
+  const rightBoxX = L + CW * 0.52;
+  const rightBoxY = y;
+  const rightBoxW = CW * 0.48;
+  const rightBoxH = 26;
+
+  doc.setDrawColor(...hexToRGB(BORDER));
+  doc.setLineWidth(0.3);
+
+  doc.roundedRect(leftBoxX, leftBoxY, leftBoxW, leftBoxH, 2, 2);
+  doc.roundedRect(rightBoxX, rightBoxY, rightBoxW, rightBoxH, 2, 2);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...hexToRGB(PRIMARY));
+  doc.text("BILLED TO", leftBoxX + 4, leftBoxY + 6);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...hexToRGB(TEXT));
+  doc.text(invoice.name ?? "—", leftBoxX + 4, leftBoxY + 12);
+  doc.text(
+    `Flat ${invoice.wing ?? ""}-${invoice.flatNumber ?? ""}`,
+    leftBoxX + 4,
+    leftBoxY + 18
+  );
+  doc.text(invoice.email ?? "—", leftBoxX + 4, leftBoxY + 24);
+
+  const infoRows: [string, string][] = [
+    ["Due Date", formatDate(invoice.dueDate)],
+    ["Issued On", formatDate((invoice.issuedAt ?? "").slice(0, 10))],
+    ["Status", invoice.status ?? "—"],
+  ];
+
+  doc.setFontSize(8.5);
+  infoRows.forEach(([label, value], index) => {
+    const rowY = rightBoxY + 6 + index * 6;
+
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...hexToRGB(PRIMARY));
+    doc.text(label, rightBoxX + 4, rowY);
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...hexToRGB(TEXT));
+    doc.text(value, rightBoxX + rightBoxW - 4, rowY, { align: "right" });
+  });
+
+  y += 36;
+
+  /* ============================================================
+     LINE ITEMS TABLE
+  ============================================================ */
+  const lineItems: { description: string; amount: number }[] = invoice.lineItems ?? [];
+  const tableStartY = y;
+  const rowHeight = 8;
+
+  doc.setFillColor(...hexToRGB(ACCENT));
+  doc.roundedRect(L, y, CW, rowHeight, 2, 2, "F");
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.text(`Invoice ID: #${invoice.invoiceId}`, pageWidth - 20, 20, {
-    align: "right",
-  });
+  doc.text("Description", L + 4, y + 5.5);
+  doc.text("Amount", R - 4, y + 5.5, { align: "right" });
 
-  y = 40;
+  y += rowHeight;
 
-  /* ================= BILLING INFO ================= */
+  if (lineItems.length === 0) {
+    doc.setFillColor(...hexToRGB(LIGHT_BG));
+    doc.rect(L, y, CW, rowHeight, "F");
 
-  doc.setFontSize(11);
+    doc.setTextColor(...hexToRGB(MUTED));
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.text("No charges available", L + 4, y + 5.5);
 
-  doc.text(`Flat: ${invoice.wing}-${invoice.flatNumber}`, 20, y);
-  doc.text(`Billing Month: ${invoice.billingMonth}`, 20, y + 8);
-  doc.text(`Due Date: ${invoice.dueDate}`, 20, y + 16);
+    y += rowHeight;
+  } else {
+    lineItems.forEach((item, idx) => {
+      if (idx % 2 === 0) {
+        doc.setFillColor(...hexToRGB(LIGHT_BG));
+        doc.rect(L, y, CW, rowHeight, "F");
+      }
 
-  doc.text(`Status: ${invoice.status}`, pageWidth - 20, y, { align: "right" });
-  doc.text(`Issued At: ${invoice.issuedAt}`, pageWidth - 20, y + 8, {
-    align: "right",
-  });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...hexToRGB(TEXT));
 
-  y += 30;
+      const desc = item.description ?? "Charge";
+      doc.text(desc, L + 4, y + 5.5);
+      doc.text(fmt(item.amount), R - 4, y + 5.5, { align: "right" });
 
-  /* ================= TABLE HEADER ================= */
+      y += rowHeight;
+    });
+  }
 
-  doc.setFontSize(12);
-  doc.setDrawColor(180);
-
-  doc.line(20, y, pageWidth - 20, y);
-  y += 8;
-
-  doc.text("Description", 22, y);
-  doc.text("Amount (₹)", pageWidth - 22, y, { align: "right" });
-
-  y += 4;
-  doc.line(20, y, pageWidth - 20, y);
+  doc.setDrawColor(...hexToRGB(BORDER));
+  doc.roundedRect(L, tableStartY, CW, y - tableStartY, 2, 2);
 
   y += 10;
 
-  /* ================= LINE ITEMS ================= */
+  /* ============================================================
+     SUMMARY
+  ============================================================ */
+  const summaryX = L + CW * 0.55;
+  const summaryW = CW * 0.45;
+  const summaryRowGap = 7;
 
-  doc.setFontSize(11);
+  const summaryRows: [string, string][] = [
+    ["Base Amount", fmt(invoice.baseAmount)],
+    ["Previous Arrears", fmt(invoice.previousArrears)],
+    ["Late Fee", fmt(invoice.lateFeeAmount)],
+  ];
 
-  invoice.lineItems?.forEach((item: any) => {
-    doc.text(item.description, 22, y);
-    doc.text(`${item.amount}`, pageWidth - 22, y, { align: "right" });
+  doc.setDrawColor(...hexToRGB(BORDER));
+  doc.roundedRect(summaryX - 4, y - 4, summaryW + 4, 32, 2, 2);
 
+  let sy = y + 2;
+  summaryRows.forEach(([label, value]) => {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...hexToRGB(MUTED));
+    doc.text(label, summaryX, sy);
+
+    doc.setTextColor(...hexToRGB(TEXT));
+    doc.text(value, R, sy, { align: "right" });
+
+    sy += summaryRowGap;
+  });
+
+  doc.setFillColor(...hexToRGB(PRIMARY));
+  doc.roundedRect(summaryX - 2, sy - 2, summaryW + 2, 10, 2, 2, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(255, 255, 255);
+  doc.text("Total Amount", summaryX + 1, sy + 4.5);
+  doc.text(fmt(invoice.totalAmount), R - 1, sy + 4.5, { align: "right" });
+
+  y = sy + 16;
+
+  if (invoice.status === "PAID") {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(22, 163, 74);
+    doc.text(`Amount Paid: ${fmt(invoice.amountPaid)}`, summaryX, y);
     y += 8;
-  });
+  }
 
-  y += 5;
-  doc.line(20, y, pageWidth - 20, y);
+  /* ============================================================
+     SIGNATORY
+  ============================================================ */
+  const sigY = PH - 50;
 
-  y += 12;
-
-  /* ================= FINANCIAL SUMMARY ================= */
-
-  const summaryStart = pageWidth - 90;
-
-  doc.text("Base Amount:", summaryStart, y);
-  doc.text(`${invoice.baseAmount}`, pageWidth - 20, y, { align: "right" });
-
-  y += 8;
-
-  doc.text("Previous Arrears:", summaryStart, y);
-  doc.text(`${invoice.previousArrears}`, pageWidth - 20, y, {
-    align: "right",
-  });
-
-  y += 8;
-
-  doc.text("Late Fee:", summaryStart, y);
-  doc.text(`${invoice.lateFeeAmount}`, pageWidth - 20, y, {
-    align: "right",
-  });
-
-  y += 10;
-
-  doc.setFontSize(13);
-  doc.text("Total Amount:", summaryStart, y);
-
-  doc.setTextColor(200, 0, 0);
-  doc.text(`${invoice.totalAmount}`, pageWidth - 20, y, {
-    align: "right",
-  });
-
-  doc.setTextColor(0, 0, 0);
-
-  y += 10;
-
-  // doc.setFontSize(11);
-  // doc.text("Amount Paid:", summaryStart, y);
-  // doc.text(`${invoice.amountPaid}`, pageWidth - 20, y, {
-  //   align: "right",
-  // // });
-
-  // y += 25;
-
-  /* ================= SIGNATORY ================= */
-
-  if (invoice.stampImageUrl) {
+  if (stampData) {
     try {
-      doc.addImage(invoice.stampImageUrl, "PNG", pageWidth - 60, y - 10, 35, 20);
-    } catch (err) {
-      console.warn("Stamp load failed");
+      doc.addImage(stampData, "PNG", R - 42, sigY - 16, 36, 18);
+    } catch {
+      console.warn("Stamp render failed");
     }
   }
 
   if (invoice.authorizedSignatoryName) {
-    doc.setFontSize(11);
-    doc.text(
-      `Authorized Signatory`,
-      pageWidth - 20,
-      y + 10,
-      { align: "right" }
-    );
+    doc.setDrawColor(...hexToRGB(BORDER));
+    doc.line(R - 60, sigY + 5, R, sigY + 5);
 
-    doc.text(
-      invoice.authorizedSignatoryName,
-      pageWidth - 20,
-      y + 18,
-      { align: "right" }
-    );
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...hexToRGB(PRIMARY));
+    doc.text(invoice.authorizedSignatoryName, R, sigY + 10, { align: "right" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...hexToRGB(MUTED));
+    doc.text("Authorized Signatory", R, sigY + 15, { align: "right" });
   }
 
-  /* ================= FOOTER ================= */
+  /* ============================================================
+     FOOTER
+  ============================================================ */
+  doc.setFillColor(...hexToRGB(PRIMARY));
+  doc.rect(0, PH - 14, PW, 14, "F");
 
-  doc.setFontSize(9);
-  doc.setTextColor(120);
+  doc.setTextColor(230, 255, 236);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
 
-  doc.text(
-    "This is a system generated invoice from the society billing system.",
-    pageWidth / 2,
-    285,
-    { align: "center" }
-  );
+  const footer =
+    invoice.invoiceFooterText ??
+    "This is a system-generated invoice. Please contact the society office for any queries.";
+
+  doc.text(footer, PW / 2, PH - 5, { align: "center" });
 
   return doc.output("arraybuffer");
 }
 
-console.log("PDF Generation Function Ready");
-
-
 /* =========================
-   TRANSPORTER (Create Once)
+   TRANSPORTER
 ========================= */
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -273,33 +458,49 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-
-console.log("Email transporter configured");
-
 /* =========================
    SEND EMAIL
 ========================= */
 async function sendInvoiceEmail(invoice: any) {
-  console.log(invoice);
-  const pdfBuffer = generateInvoicePDF(invoice);
-  console.log("Generated PDF for invoice:", invoice.invoiceId, invoice.email, invoice.lineItems?.length, invoice.societyName);
+  console.log("==== PDF GENERATION START ====");
+  console.log({
+    invoiceId: invoice.invoiceId,
+    email: invoice.email,
+    lineItems: invoice.lineItems?.length ?? 0,
+    society: invoice.societyName,
+    logoUrl: invoice.logoUrl ?? null,
+    stampUrl: invoice.stampImageUrl ?? null,
+    totalAmount: invoice.totalAmount,
+  });
+
+  const pdfBuffer = await generateInvoicePDF(invoice);
+
+  const billingLabel = invoice.billingMonth
+    ? new Date(invoice.billingMonth).toLocaleDateString("en-IN", {
+        month: "long",
+        year: "numeric",
+      })
+    : "Invoice";
 
   const info = await transporter.sendMail({
-    from: `"My Society Billing" <${process.env.SYSTEM_EMAIL}>`,
+    from: `"${invoice.societyName ?? "Society Billing"}" <${process.env.SYSTEM_EMAIL}>`,
     to: invoice.email,
-    subject: `Invoice #${invoice.invoiceId} ${invoice.societyName}`,
-    text: `Dear ${invoice.name},\n\nPlease find your attached invoice.\n\nRegards,\nMy Society Billing`,
+    subject: `Invoice #${invoice.invoiceId} - ${billingLabel} | ${invoice.societyName ?? ""}`,
+    text: `Dear ${invoice.name ?? "Resident"},\n\nPlease find attached your maintenance invoice for ${billingLabel}.\n\nTotal Due: ₹${invoice.totalAmount}\nDue Date: ${invoice.dueDate}\n\nKindly ensure timely payment to avoid late fees.\n\nRegards,\n${invoice.societyName ?? "Society Management"}`,
     attachments: [
       {
-        filename: `Invoice-${invoice.invoiceId}.pdf`,
+        filename: `Invoice-${invoice.invoiceId}-${billingLabel.replace(/ /g, "-")}.pdf`,
         content: Buffer.from(pdfBuffer),
         contentType: "application/pdf",
       },
     ],
   });
 
-  console.log("EMAIL RESPONSE:", info.response);
+  console.log("==== EMAIL SENT SUCCESS ====");
+  console.log({
+    invoiceId: invoice.invoiceId,
+    response: info.response,
+  });
 
   return info;
 }
-
