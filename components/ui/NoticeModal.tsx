@@ -9,228 +9,156 @@ interface NoticeModalProps {
   societyId: number;
 }
 
-interface NoticeRequest {
-  title: string;
-  content: string;
-  societyId: number;
-  durationInDays: number | "";
-  tags: string[];
-}
-
 export default function NoticeModal({ societyId }: NoticeModalProps) {
-
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [duration, setDuration] = useState<number | "">("");
   const [tags, setTags] = useState("");
   const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const [alert, setAlert] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
-
-  // auto-hide alert
   useEffect(() => {
     if (!alert) return;
-
-    const timer = setTimeout(() => {
-      console.log("🧹 Clearing alert");
-      setAlert(null);
-    }, 3000);
-
+    const timer = setTimeout(() => setAlert(null), 3000);
     return () => clearTimeout(timer);
   }, [alert]);
 
   const submitNotice = async () => {
+    if (!title.trim() || !content.trim()) {
+      setAlert({ message: "Title and content are required", type: "error" });
+      return;
+    }
     try {
-      console.log("🚀 Submitting notice...");
-
       setLoading(true);
-
-      const payload: NoticeRequest = {
-        title,
-        content,
-        societyId,
-        durationInDays: duration,
-        tags: tags.split(",").map((tag) => tag.trim()),
-      };
-
-      console.log("📦 Payload:", payload);
-      console.log("🌐 URL:", `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin/notices`);
-
-      const response = await axios.post(
+      await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin/notices`,
-        payload,
+        { title, content, societyId, durationInDays: duration, tags: tags.split(",").map((t) => t.trim()) },
         { withCredentials: true }
       );
-
-      console.log("✅ Notice created:", response.data);
-
-      setAlert({
-        message: "Notice posted successfully",
-        type: "success",
-      });
-
-      // reset form
-      setTitle("");
-      setContent("");
-      setDuration("");
-      setTags("");
-
-      // close modal after short delay
-      setTimeout(() => {
-        console.log("🔴 Closing modal after success");
-        setIsOpen(false);
-      }, 1500);
-
-    } catch (error: any) {
-      console.error("❌ Error submitting notice:", error);
-
-      if (error.response) {
-        console.error("📛 Backend response:", error.response.data);
-        console.error("📛 Status:", error.response.status);
-      }
-
-      setAlert({
-        message: "Failed to post notice",
-        type: "error",
-      });
-
+      setAlert({ message: "Notice posted successfully", type: "success" });
+      setTitle(""); setContent(""); setDuration(""); setTags("");
+      setTimeout(() => setIsOpen(false), 1500);
+    } catch {
+      setAlert({ message: "Failed to post notice", type: "error" });
     } finally {
-      console.log("🔄 Request complete");
       setLoading(false);
     }
   };
 
-  const inputClass = "w-full px-3.5 py-2.5 text-sm rounded-lg border transition-all duration-150";
-  const inputStyle = {
-    background: "var(--secondary)",
-    border: "1.5px solid var(--border)",
-    color: "var(--foreground)",
-  };
-  const focusIn = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    (e.currentTarget.style.borderColor = "var(--primary)");
-  const focusOut = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    (e.currentTarget.style.borderColor = "var(--border)");
-
   return (
     <>
       <button
-        onClick={() => {
-          console.log("🟢 Opening Notice Modal");
-          setIsOpen(true);
-        }}
-        className="px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-150"
-        style={{ background: "var(--accent)", color: "var(--accent-foreground)" }}
-        onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
-        onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+        onClick={() => setIsOpen(true)}
+        className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all"
+        style={{ background: "var(--primary)", color: "white" }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--primary-hover)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "var(--primary)")}
       >
-        + Create Notice
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Create Notice
       </button>
 
-      <Modal
-        isOpen={isOpen}
-        onClose={() => {
-          console.log("🔴 Closing Notice Modal");
-          setIsOpen(false);
-        }}
-        title="Create Notice"
-      >
+      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Create Notice">
         <div className="space-y-4">
+          {alert && <AlertCard message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
 
-          {alert && (
-            <AlertCard
-              message={alert.message}
-              type={alert.type}
-              onClose={() => setAlert(null)}
-            />
-          )}
+          <FieldLabel label="Title">
+            <StyledInput placeholder="e.g. Maintenance on Sunday" value={title} onChange={(e) => setTitle(e.target.value)} />
+          </FieldLabel>
 
-          <div>
-            <label
-              className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
-              style={{ color: "var(--muted-foreground)", fontFamily: "'Space Mono', monospace" }}
-            >
-              Title
-            </label>
-            <input
-              className={inputClass}
-              style={inputStyle}
-              placeholder="Enter notice title"
-              value={title}
-              onFocus={focusIn}
-              onBlur={focusOut}
-              onChange={(e) => {
-                console.log("✏️ Title:", e.target.value);
-                setTitle(e.target.value);
-              }}
-            />
-          </div>
-
-          <div>
-            <label
-              className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
-              style={{ color: "var(--muted-foreground)", fontFamily: "'Space Mono', monospace" }}
-            >
-              Content
-            </label>
-            <textarea
-              rows={4}
-              className={inputClass}
-              style={{ ...inputStyle, resize: "none" }}
-              placeholder="Enter notice content"
-              value={content}
-              onFocus={focusIn}
-              onBlur={focusOut}
-              onChange={(e) => {
-                console.log("✏️ Content updated");
-                setContent(e.target.value);
-              }}
-            />
-          </div>
+          <FieldLabel label="Content">
+            <StyledTextarea rows={4} placeholder="Write the full notice here…" value={content} onChange={(e) => setContent(e.target.value)} />
+          </FieldLabel>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label
-                className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
-                style={{ color: "var(--muted-foreground)", fontFamily: "'Space Mono', monospace" }}
-              >
-                Duration (days)
-              </label>
-              <input
-                type="number"
-                min={1}
-                className={inputClass}
-                style={inputStyle}
-                placeholder="e.g. 7"
-                value={duration}
-                onFocus={focusIn}
-                onBlur={focusOut}
-                onChange={(e) => {
-                  console.log("✏️ Duration:", e.target.value);
-                  setDuration(Number(e.target.value));
-                }}
-              />
-            </div>
-
-          
+            <FieldLabel label="Duration (days)">
+              <StyledInput type="number" min={1} placeholder="e.g. 7" value={duration} onChange={(e) => setDuration(Number(e.target.value))} />
+            </FieldLabel>
+            <FieldLabel label="Tags (comma-separated)">
+              <StyledInput placeholder="e.g. URGENT, WATER" value={tags} onChange={(e) => setTags(e.target.value)} />
+            </FieldLabel>
           </div>
 
-          <button
-            onClick={submitNotice}
-            disabled={loading}
-            className="w-full py-2.5 text-sm font-semibold rounded-lg transition-all duration-150 disabled:opacity-50"
-            style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
-            onMouseEnter={(e) => !loading && (e.currentTarget.style.opacity = "0.9")}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-          >
-            {loading ? "Posting…" : "Post Notice"}
-          </button>
-
+          <div className="pt-1">
+            <button
+              onClick={submitNotice}
+              disabled={loading}
+              className="w-full py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              style={{ background: "var(--primary)", color: "white" }}
+              onMouseEnter={(e) => !loading && (e.currentTarget.style.background = "var(--primary-hover)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "var(--primary)")}
+            >
+              {loading && <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />}
+              {loading ? "Posting…" : "Post Notice"}
+            </button>
+          </div>
         </div>
       </Modal>
     </>
+  );
+}
+
+function FieldLabel({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label
+        className="block text-xs font-medium mb-1.5"
+        style={{ color: "var(--muted-foreground)", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase", fontSize: "0.68rem", letterSpacing: "0.08em" }}
+      >
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function StyledInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      className="w-full px-3.5 py-2.5 text-sm rounded-lg outline-none transition-all"
+      style={{
+        background: "var(--secondary)",
+        border: "1.5px solid var(--border)",
+        color: "var(--foreground)",
+      }}
+      onFocus={(e) => {
+        e.currentTarget.style.borderColor = "var(--primary)";
+        e.currentTarget.style.boxShadow = "0 0 0 3px var(--primary-subtle)";
+        props.onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        e.currentTarget.style.borderColor = "var(--border)";
+        e.currentTarget.style.boxShadow = "none";
+        props.onBlur?.(e);
+      }}
+    />
+  );
+}
+
+function StyledTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      {...props}
+      className="w-full px-3.5 py-2.5 text-sm rounded-lg outline-none transition-all resize-none"
+      style={{
+        background: "var(--secondary)",
+        border: "1.5px solid var(--border)",
+        color: "var(--foreground)",
+      }}
+      onFocus={(e) => {
+        e.currentTarget.style.borderColor = "var(--primary)";
+        e.currentTarget.style.boxShadow = "0 0 0 3px var(--primary-subtle)";
+        props.onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        e.currentTarget.style.borderColor = "var(--border)";
+        e.currentTarget.style.boxShadow = "none";
+        props.onBlur?.(e);
+      }}
+    />
   );
 }
