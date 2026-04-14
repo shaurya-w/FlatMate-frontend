@@ -34,14 +34,17 @@ export default function Login() {
         router.push("/unauthorized");
       }
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data || "Invalid credentials. Please try again.");
-      } else {
-        setError("Login failed. Please try again.");
-      }
-    } finally {
-      setLoading(false);
-    }
+  if (axios.isAxiosError(err)) {
+    const message =
+      err.response?.data?.message ||  
+      err.response?.data?.error ||     // fallback
+      "Invalid email or password";     // final fallback
+
+    setError(message);
+  } else {
+    setError("Login failed. Please try again.");
+  }
+}
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

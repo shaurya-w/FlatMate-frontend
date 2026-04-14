@@ -92,7 +92,7 @@ export default function AdminMetrics() {
 
           {/* Value */}
           <p
-            className="text-2xl font-bold mb-0.5"
+            className="text-xl font-bold mb-0.5"
             style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
           >
             {m.value}

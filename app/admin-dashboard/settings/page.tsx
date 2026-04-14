@@ -24,15 +24,6 @@ export default function SettingsPage() {
   return (
     <DashboardLayout name={user.name}>
       {/* Page header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}>
-          Settings
-        </h1>
-        <p className="text-sm mt-1" style={{ color: "var(--muted-foreground)" }}>
-          Manage your society's charges and contact directory
-        </p>
-      </div>
-
       {/* Sections */}
       <div className="space-y-12">
         <ChargesSection />
