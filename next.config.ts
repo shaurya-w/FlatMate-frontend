@@ -5,13 +5,13 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 };
 
-export default withPWA({
-  dest: "public",
-  register: true,
-  disable: process.env.NODE_ENV === "development",
-  workboxOptions: {
-    skipWaiting: true,
-    clientsClaim: true,
-    exclude: [/dynamic-css-manifest\.json$/],
-  },
-})(nextConfig);
+// export default withPWA({
+//   dest: "public",
+//   register: true,
+//   disable: true, // Disable PWA in development mode
+//   workboxOptions: {
+//     skipWaiting: true,
+//     clientsClaim: true,
+//     exclude: [/dynamic-css-manifest\.json$/],
+//   },
+// })(nextConfig);
