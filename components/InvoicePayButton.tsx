@@ -50,9 +50,6 @@ export default function FetchInvoices({ userId }: { userId: number }) {
 
       console.log("Order created:", data);
 
-      // 👉 For now just log
-      // 👉 Next step: open Razorpay checkout here
-
       alert("Order created! Check console.");
 
     } catch (err) {

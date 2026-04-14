@@ -36,12 +36,6 @@ export default function AdminDashboard() {
     <DashboardLayout name={user.name}>
       {/* Page header */}
       <div className="mb-8 animate-fade-in">
-        <p
-          className="text-xs font-medium mb-1"
-          style={{ color: "var(--primary)", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase", letterSpacing: "0.1em" }}
-        >
-          Admin Panel
-        </p>
         <h1
           className="text-2xl font-bold"
           style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
@@ -56,7 +50,12 @@ export default function AdminDashboard() {
       {/* Metrics */}
       <AdminMetrics />
 
-      {/* Notice action bar */}
+      {/* Residents table */}
+      <div className="mb-8">
+        <RenderUsers />
+      </div>
+
+       {/* Notice action bar */}
       <div
         className="flex items-center justify-between mb-6 px-5 py-4 rounded-2xl"
         style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "var(--shadow-xs)" }}
@@ -66,11 +65,6 @@ export default function AdminDashboard() {
           <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>Post announcements to all residents</p>
         </div>
         <NoticeModal societyId={1} />
-      </div>
-
-      {/* Residents table */}
-      <div className="mb-8">
-        <RenderUsers />
       </div>
 
       {/* Complaint board */}

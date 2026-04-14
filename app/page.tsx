@@ -73,23 +73,12 @@ export default function Login() {
 
         {/* Logo */}
         <div className="relative flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-base"
-            style={{ background: "var(--primary)", color: "white" }}
-          >
-            F
-          </div>
-          <span className="font-semibold text-lg" style={{ color: "white" }}>FlatMate</span>
+          <img src="/flatMate_Logo.svg" alt="FlatMate_Logo" className="h-10 w-auto" />
         </div>
 
         {/* Hero text */}
         <div className="relative">
-          <p
-            className="text-xs font-medium mb-5 tracking-widest opacity-40"
-            style={{ color: "white", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}
-          >
-            Society Management
-          </p>
+         
           <h2
             className="text-4xl font-bold leading-tight mb-5"
             style={{ color: "white", letterSpacing: "-0.02em" }}

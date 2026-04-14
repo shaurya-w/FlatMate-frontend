@@ -3,6 +3,7 @@
 import { useRouter, usePathname } from "next/navigation";
 import { useLogout } from "@/hooks/useLogout";
 import { useState } from "react";
+import flatmate_logo from "@/public/FlatMate_Logo.svg";
 
 interface NavbarProps {
   name: string;
@@ -30,15 +31,7 @@ export default function Navbar({ name }: NavbarProps) {
     >
       {/* Logo */}
       <div className="flex items-center gap-2.5 flex-shrink-0">
-        <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm"
-          style={{ background: "var(--primary)", color: "white" }}
-        >
-          F
-        </div>
-        <span className="font-semibold text-sm tracking-tight" style={{ color: "var(--foreground)" }}>
-          FlatMate
-        </span>
+        <img src={flatmate_logo.src} alt="FlatMate" className="h-6 w-auto" />
       </div>
 
       {/* Nav Links (admin only) */}

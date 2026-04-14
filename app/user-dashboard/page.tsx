@@ -5,9 +5,10 @@ import DashboardLayout from "@/components/layout/dashboardlayout";
 import ComplaintModal from "@/components/ComplaintFormModal";
 import NoticeSlider from "@/components/NoticeSlider";
 import FetchInvoices from "@/components/FetchInvoices";
-import ContactsSectionUser from "../admin-dashboard/settings/ContactsSectionUser";
+import ContactModal from "@/components/admin/ContactModal";
 import Script from "next/script";
 import MyComplaints from "@/components/MyComplaints";
+import ContactsForUser from "@/components/ContactsForUser";
 
 
 export default function UserDashboard() {
@@ -35,30 +36,19 @@ export default function UserDashboard() {
 
       <DashboardLayout name={user.name}>
         {/* Welcome header */}
-        <div className="mb-8 animate-fade-in">
-          <p
-            className="text-xs font-medium mb-1"
-            style={{ color: "var(--primary)", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase", letterSpacing: "0.1em" }}
-          >
-            Resident Portal
-          </p>
+        <div className="mb-6 animate-fade-in">
           <h1
             className="text-2xl font-bold"
             style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
           >
-            Hello, {user.name.split(" ")[0]} 👋
+            Hello, {user.name.split(" ")[0]}
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--muted-foreground)" }}>
             Here's what's happening in your society today
           </p>
         </div>
-
-  
-
         {/* Notices */}
-        <Section title="Community Notices" subtitle="Latest announcements from management">
           <NoticeSlider societyId={1} />
-        </Section>
 
         {/* Invoices */}
         <Section title="Your Invoices" subtitle="Pending dues and payment history">
@@ -76,7 +66,7 @@ export default function UserDashboard() {
 
         {/* Contacts */}
         <Section title="Society Contacts" subtitle="Service providers and emergency numbers">
-          <ContactsSectionUser />
+          <ContactsForUser />
         </Section>
       </DashboardLayout>
     </>

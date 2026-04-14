@@ -25,12 +25,6 @@ export default function SettingsPage() {
     <DashboardLayout name={user.name}>
       {/* Page header */}
       <div className="mb-8">
-        <p
-          className="text-xs font-medium mb-1"
-          style={{ color: "var(--primary)", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase", letterSpacing: "0.1em" }}
-        >
-          Configuration
-        </p>
         <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}>
           Settings
         </h1>

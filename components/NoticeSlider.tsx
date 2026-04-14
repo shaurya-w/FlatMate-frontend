@@ -32,7 +32,7 @@ export default function NoticeSlider({ societyId }: { societyId: number }) {
 
   return (
     <div
-      className="w-full rounded-2xl p-6 mt-4 relative overflow-hidden"
+      className="w-full rounded-2xl p-6 mt-4 relative overflow-visible mb-8"
       style={{
         // Cork-board green texture base
         background: "#4a7c59",
@@ -53,9 +53,8 @@ export default function NoticeSlider({ societyId }: { societyId: number }) {
 
       {/* Board title */}
       <div className="flex items-center gap-2 mb-5 relative z-10">
-        <div className="w-5 h-5 rounded-full flex-shrink-0" style={{ background: "#ef4444", boxShadow: "0 2px 4px rgba(0,0,0,0.4)" }} />
         <span
-          className="text-xs font-bold tracking-widest uppercase"
+          className="text-lg font-bold tracking-widest uppercase"
           style={{ color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.15em" }}
         >
           Notice Board
@@ -95,11 +94,18 @@ export default function NoticeSlider({ societyId }: { societyId: number }) {
   );
 }
 
-function NoteCard({ notice, pinColor, tilt }: { notice: Notice; pinColor: string; tilt: string }) {
-  const daysLeft = Math.max(0, Math.ceil((new Date(notice.expirationDate).getTime() - Date.now()) / 86400000));
-  const isExpiringSoon = daysLeft <= 3;
+function NoteCard({
+  notice,
+  pinColor,
+  tilt,
+}: {
+  notice: Notice;
+  pinColor: string;
+  tilt: string;
+}) {
+  const isMobile =
+    typeof window !== "undefined" ? window.innerWidth < 640 : false;
 
-  // Paper colour — warm yellows / cream / pale blue
   const paperColors = [
     { bg: "#fef9c3", lines: "#e5e1a8" },
     { bg: "#fef3c7", lines: "#e8dea0" },
@@ -111,82 +117,154 @@ function NoteCard({ notice, pinColor, tilt }: { notice: Notice; pinColor: string
 
   return (
     <div
-      className={`min-w-[210px] max-w-[210px] relative transition-all duration-200 cursor-default ${tilt}`}
+      className={`
+        relative shrink-0 transition-all duration-200 cursor-default
+        w-[78vw] max-w-[260px] sm:w-[210px] sm:max-w-[210px]
+        pt-5 sm:pt-6
+        ${tilt}
+      `}
       style={{ filter: "drop-shadow(2px 4px 8px rgba(0,0,0,0.35))" }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = "rotate(0deg) translateY(-4px) scale(1.02)";
-        (e.currentTarget as HTMLElement).style.filter = "drop-shadow(3px 8px 14px rgba(0,0,0,0.45))";
+        if (window.innerWidth < 640) return;
+        (e.currentTarget as HTMLElement).style.transform =
+          "rotate(0deg) translateY(-4px) scale(1.02)";
+        (e.currentTarget as HTMLElement).style.filter =
+          "drop-shadow(3px 8px 14px rgba(0,0,0,0.45))";
         (e.currentTarget as HTMLElement).style.zIndex = "10";
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLElement).style.transform = "";
-        (e.currentTarget as HTMLElement).style.filter = "drop-shadow(2px 4px 8px rgba(0,0,0,0.35))";
+        (e.currentTarget as HTMLElement).style.filter =
+          "drop-shadow(2px 4px 8px rgba(0,0,0,0.35))";
         (e.currentTarget as HTMLElement).style.zIndex = "auto";
       }}
     >
-      {/* Pushpin */}
-      <div
-        className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 w-6 h-6 rounded-full flex items-center justify-center"
-        style={{
-          background: `radial-gradient(circle at 35% 35%, ${pinColor}dd, ${pinColor})`,
-          boxShadow: `0 2px 6px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.3)`,
-        }}
-      >
-        <div className="w-2 h-2 rounded-full" style={{ background: "rgba(255,255,255,0.4)" }} />
+      {/* 3D push pin */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+        {/* needle */}
+        <div
+          className="absolute left-1/2 top-[16px] -translate-x-1/2 rounded-full"
+          style={{
+            width: "2px",
+            height: isMobile ? "16px" : "18px",
+            background:
+              "linear-gradient(to bottom, #d1d5db 0%, #9ca3af 45%, #6b7280 100%)",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.35)",
+          }}
+        />
+
+        {/* pin shadow */}
+        <div
+          className="absolute left-1/2 top-[14px] -translate-x-1/2 rounded-full"
+          style={{
+            width: isMobile ? "20px" : "22px",
+            height: "8px",
+            background: "rgba(0,0,0,0.18)",
+            filter: "blur(4px)",
+          }}
+        />
+
+        {/* pin head */}
+        <div
+          className="relative rounded-full flex items-center justify-center"
+          style={{
+            width: isMobile ? "24px" : "26px",
+            height: isMobile ? "24px" : "26px",
+            background: `
+              radial-gradient(circle at 32% 28%, rgba(255,255,255,0.95) 0 14%, transparent 15%),
+              radial-gradient(circle at 35% 30%, ${pinColor}ee 0%, ${pinColor} 55%, color-mix(in srgb, ${pinColor} 70%, black) 100%)
+            `,
+            boxShadow: `
+              0 4px 8px rgba(0,0,0,0.35),
+              inset -3px -4px 6px rgba(0,0,0,0.22),
+              inset 2px 2px 4px rgba(255,255,255,0.35)
+            `,
+            border: "1px solid rgba(255,255,255,0.18)",
+          }}
+        >
+          <div
+            className="rounded-full"
+            style={{
+              width: isMobile ? "6px" : "7px",
+              height: isMobile ? "6px" : "7px",
+              background: "rgba(255,255,255,0.45)",
+              transform: "translate(-2px, -2px)",
+              filter: "blur(0.2px)",
+            }}
+          />
+        </div>
       </div>
 
       {/* Paper */}
       <div
-        className="rounded-sm pt-5 px-4 pb-4 relative overflow-hidden"
-        style={{ background: paper.bg, minHeight: "160px" }}
+        className="rounded-sm pt-6 sm:pt-7 px-3 sm:px-4 pb-4 relative overflow-hidden"
+        style={{
+          background: paper.bg,
+          minHeight: isMobile ? "150px" : "160px",
+        }}
       >
-        {/* Ruled lines */}
-        {[0,1,2,3,4,5].map((l) => (
+        {/* ruled lines */}
+        {[0, 1, 2, 3, 4, 5].map((l) => (
           <div
             key={l}
             className="absolute left-0 right-0"
             style={{
               height: "1px",
               background: paper.lines,
-              top: `${52 + l * 20}px`,
+              top: `${52 + l * (isMobile ? 18 : 20)}px`,
               opacity: 0.6,
             }}
           />
         ))}
 
-        {/* Red margin line */}
-        <div className="absolute top-0 bottom-0 left-10" style={{ width: "1px", background: "#fca5a580", opacity: 0.7 }} />
+        {/* red margin */}
+        <div
+          className="absolute top-0 bottom-0 left-8 sm:left-10"
+          style={{
+            width: "1px",
+            background: "#fca5a580",
+            opacity: 0.7,
+          }}
+        />
 
-        {/* Content */}
         <div className="relative">
-          {isExpiringSoon && (
-            <span
-              className="inline-block text-xs font-bold px-1.5 py-0.5 rounded mb-2"
-              style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", fontSize: "0.62rem" }}
-            >
-              ⏰ {daysLeft === 0 ? "Expires today" : `${daysLeft}d left`}
-            </span>
-          )}
           <h3
-            className="text-sm font-bold mb-2 leading-tight"
+            className="font-bold mb-2 leading-tight text-[15px] sm:text-sm line-clamp-2"
             style={{ color: "#1c1917", fontFamily: "'Outfit', sans-serif" }}
           >
             {notice.title}
           </h3>
+
           <p
-            className="text-xs leading-relaxed line-clamp-4"
+            className="leading-relaxed text-[13px] sm:text-xs line-clamp-4"
             style={{ color: "#44403c" }}
           >
             {notice.content}
           </p>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between mt-4 pt-2" style={{ borderTop: `1px solid ${paper.lines}` }}>
-            <span className="text-xs font-semibold" style={{ color: "#78716c" }}>
-              — {notice.authorName}
+          <div
+            className="flex items-center justify-between mt-4 pt-2 gap-2"
+            style={{ borderTop: `1px solid ${paper.lines}` }}
+          >
+            <span
+              className="text-[12px] sm:text-xs font-semibold truncate"
+              style={{ color: "#78716c" }}
+            >
+              by {notice.authorName}
             </span>
-            <span className="text-xs" style={{ color: "#a8a29e", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.65rem" }}>
-              {new Date(notice.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+
+            <span
+              className="text-[11px] sm:text-xs shrink-0"
+              style={{
+                color: "#a8a29e",
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: isMobile ? "0.68rem" : "0.65rem",
+              }}
+            >
+              {new Date(notice.createdAt).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+              })}
             </span>
           </div>
         </div>

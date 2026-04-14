@@ -50,3 +50,6 @@ export default function AlertCard({ message, type, onClose }: AlertCardProps) {
     </div>
   );
 }
+
+
+
