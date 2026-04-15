@@ -5,15 +5,16 @@ import Modal from "./ui/Modal";
 import axios from "axios";
 import AlertCard from "./ui/AlertCard";
 
-const TAGS = ["MAINTENANCE", "NOISE", "SECURITY", "CLEANLINESS", "PARKING", "OTHER"];
+const TAGS = ["MAINTENANCE", "NOISE", "SECURITY", "CLEANING", "PLUMBING", "ELECTRICAL", "OTHER"];
 
 const TAG_ICONS: Record<string, React.ReactNode> = {
-  MAINTENANCE: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>,
-  NOISE:       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" /></svg>,
-  SECURITY:    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
-  CLEANLINESS: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>,
-  PARKING:     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>,
-  OTHER:       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
+    MAINTENANCE: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>,
+    NOISE:       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" /></svg>,
+    SECURITY:    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
+    CLEANING:    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>,
+    PLUMBING:    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v6m0 0c0 2-2 4-4 4H4m8-4c0 2 2 4 4 4h4M5 12H2m20 0h-3M12 22v-6" /></svg>,
+    ELECTRICAL:  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>,
+    OTHER:       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
 };
 
 export default function ComplaintModal({ societyId }: { societyId: number }) {
@@ -24,27 +25,33 @@ export default function ComplaintModal({ societyId }: { societyId: number }) {
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const submitComplaint = async () => {
-    if (!subject.trim() || !body.trim()) {
-      setAlert({ message: "Please fill in all fields", type: "error" });
-      return;
-    }
-    try {
-      setLoading(true);
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/complaints`,
-        { subject, body, tag, societyId },
-        { withCredentials: true }
-      );
-      setAlert({ message: "Complaint submitted successfully", type: "success" });
-      setSubject(""); setBody(""); setTag("OTHER");
-      setTimeout(() => { setIsOpen(false); setAlert(null); }, 1500);
-    } catch {
-      setAlert({ message: "Failed to submit complaint", type: "error" });
-    } finally {
-      setLoading(false);
-    }
-  };
+    const submitComplaint = async () => {
+        if (!subject.trim() || !body.trim()) {
+            setAlert({ message: "Please fill in all fields", type: "error" });
+            return;
+        }
+        try {
+            setLoading(true);
+            await axios.post(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/complaints`,
+                { subject, body, tag, societyId },
+                { withCredentials: true }
+            );
+            setAlert({ message: "Complaint submitted successfully", type: "success" });
+            setSubject(""); setBody(""); setTag("OTHER");
+            setTimeout(() => { setIsOpen(false); setAlert(null); }, 1500);
+        } catch (err) {
+            if (axios.isAxiosError(err)) {
+                console.error("Complaint error:", err.response?.status, err.response?.data);
+                setAlert({ message: `Failed: ${err.response?.status} - ${JSON.stringify(err.response?.data)}`, type: "error" });
+            } else {
+                console.error("Complaint error:", err);
+                setAlert({ message: "Failed to submit complaint", type: "error" });
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
   return (
     <>
