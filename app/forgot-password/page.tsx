@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import axios from "axios";
+import { api } from "@/lib/axios";
 
 export default function ForgotPassword() {
     const [email, setEmail] = useState("");
@@ -11,7 +11,7 @@ export default function ForgotPassword() {
     const handleSubmit = async () => {
         setLoading(true);
         try {
-            await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/forgot-password`, { email });
+            await api.post("/auth/forgot-password", { email });
             setSent(true);
         } catch (err) {
             console.error(err);
